@@ -1,0 +1,10 @@
+## Pages
+- [Accueil - BENDZA](/home): Découvrez les meilleurs créateurs de contenu sur BENDZA
+- [Accueil - BENDZA](/home): Bienvenue sur BENDZA - Crée. Publie. Encaisse. Découvrez des contenus exclusifs et monétisez votre passion.
+- [Connexion - BENDZA](/login): Connectez-vous à votre compte BENDZA
+- [Créer un compte - BENDZA](/register): Créez votre compte BENDZA et rejoignez la communauté
+- [Explorer - BENDZA](/explore): Découvrez tous les créateurs de contenu sur BENDZA
+- [Mes abonnements - BENDZA](/subscriptions): Gérez vos abonnements aux créateurs BENDZA
+- [Mes achats - BENDZA](/purchases): Consultez l
+- [Messages - BENDZA](/messages): Consultez vos conversations avec les créateurs
+- [Tableau de Bord Créateur - BENDZA](/creatordashboard): Tableau de bord créateur BENDZA. Gérez votre contenu, vos revenus et vos abonnés.
