@@ -89,7 +89,7 @@ function BecomeCreator() {
   // Si déjà créateur
   if (userProfile?.is_creator) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -115,7 +115,7 @@ function BecomeCreator() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -133,9 +133,7 @@ function BecomeCreator() {
           transition={{ duration: 0.4 }}
           className="text-center mb-12"
         >
-          <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <img src="/logo.png" alt="BENDZA" className="w-12 h-12" />
-          </div>
+          <img src="/logo.png" alt="BENDZA" className="w-16 h-16 mx-auto mb-6" />
           <h1 className="text-4xl font-bold text-white mb-4">
             Devenez créateur sur BENDZA
           </h1>
