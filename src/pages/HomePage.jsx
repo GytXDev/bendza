@@ -1,12 +1,72 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 function HomePage() {
     const { user, userProfile } = useAuth();
+    const navigate = useNavigate();
+
+    // Gérer les callbacks OAuth sur la page d'accueil
+    useEffect(() => {
+        const handleOAuthCallback = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasOAuthParams = urlParams.has('access_token') || urlParams.has('refresh_token') || urlParams.has('error');
+
+            if (hasOAuthParams) {
+                try {
+                    const { data: { session }, error } = await supabase.auth.getSession();
+
+                    if (error) {
+                        console.error('Erreur lors de la récupération de la session:', error);
+                        navigate('/login?error=auth_failed');
+                        return;
+                    }
+
+                    if (session) {
+                        // Vérifier si l'utilisateur existe dans la table users
+                        const { data: userProfile, error: profileError } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+
+                        if (profileError && profileError.code === 'PGRST116') {
+                            // L'utilisateur n'existe pas, le créer
+                            const { error: insertError } = await supabase
+                                .from('users')
+                                .insert([
+                                    {
+                                        id: session.user.id,
+                                        email: session.user.email,
+                                        name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
+                                        photourl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null,
+                                        is_creator: false
+                                    }
+                                ]);
+
+                            if (insertError) {
+                                console.error('Erreur lors de la création du profil:', insertError);
+                            }
+                        }
+
+                        // Nettoyer l'URL et rediriger
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } else {
+                        navigate('/login');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du callback d\'authentification:', error);
+                    navigate('/login?error=callback_failed');
+                }
+            }
+        };
+
+        handleOAuthCallback();
+    }, [navigate]);
 
     return (
         <motion.div
