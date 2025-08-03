@@ -102,8 +102,18 @@ export class ImageUploadService {
             const fileName = imageUrl.split('/').pop().split('?')[0]
 
             if (fileName && fileName !== 'default-avatar.png') {
+                // Détecter le bucket à partir de l'URL
+                let bucketName = this.bucketName // fallback
+                if (imageUrl.includes('/profile-banners/')) {
+                    bucketName = 'profile-banners'
+                } else if (imageUrl.includes('/profile-images/')) {
+                    bucketName = 'profile-images'
+                } else if (imageUrl.includes('/creator-content/')) {
+                    bucketName = 'creator-content'
+                }
+
                 const { error } = await supabase.storage
-                    .from(this.bucketName)
+                    .from(bucketName)
                     .remove([fileName])
 
                 if (error) {
@@ -118,9 +128,23 @@ export class ImageUploadService {
     }
 
     /**
-     * Upload une image de profil avec gestion optimisée
+     * Upload une image de profil
      */
     async uploadProfileImage(file, userId, currentImageUrl = null) {
+        return this.uploadImage(file, userId, 'profile-images', currentImageUrl)
+    }
+
+    /**
+     * Upload une bannière de profil
+     */
+    async uploadBannerImage(file, userId, currentImageUrl = null) {
+        return this.uploadImage(file, userId, 'profile-banners', currentImageUrl)
+    }
+
+    /**
+     * Upload une image générique
+     */
+    async uploadImage(file, userId, bucketName, currentImageUrl = null) {
         try {
             // Validation
             this.validateFile(file)
@@ -138,9 +162,9 @@ export class ImageUploadService {
             console.log('📝 Nom de fichier généré:', fileName)
 
             // Upload vers Supabase Storage
-            console.log('📤 Upload vers le stockage...')
+            console.log(`📤 Upload vers le stockage (bucket: ${bucketName})...`)
             const { data, error } = await supabase.storage
-                .from(this.bucketName)
+                .from(bucketName)
                 .upload(fileName, compressedFile, {
                     cacheControl: '3600',
                     upsert: false
@@ -152,7 +176,7 @@ export class ImageUploadService {
 
             // Obtenir l'URL publique
             const { data: urlData } = supabase.storage
-                .from(this.bucketName)
+                .from(bucketName)
                 .getPublicUrl(fileName)
 
             const publicUrl = urlData.publicUrl

@@ -21,7 +21,21 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, name, photourl, is_creator, created_at')
+        .select(`
+          id, 
+          email, 
+          name, 
+          photourl, 
+          is_creator, 
+          creator_bio,
+          creator_description,
+          banner_url,
+          account_type,
+          subscription_price,
+          creator_verified,
+          creator_since,
+          created_at
+        `)
         .eq('id', userId)
         .single()
 
@@ -147,15 +161,47 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
+      // Mapper les noms de champs du frontend vers la base de données
+      const mappedUpdates = {}
+
+      if (updates.bannerUrl !== undefined) {
+        mappedUpdates.banner_url = updates.bannerUrl
+      }
+      if (updates.photourl !== undefined) {
+        mappedUpdates.photourl = updates.photourl
+      }
+      if (updates.name !== undefined) {
+        mappedUpdates.name = updates.name
+      }
+      if (updates.creatorBio !== undefined) {
+        mappedUpdates.creator_bio = updates.creatorBio
+      }
+      if (updates.creatorDescription !== undefined) {
+        mappedUpdates.creator_description = updates.creatorDescription
+      }
+      if (updates.accountType !== undefined) {
+        mappedUpdates.account_type = updates.accountType
+      }
+      if (updates.subscriptionPrice !== undefined) {
+        mappedUpdates.subscription_price = updates.subscriptionPrice
+      }
+
+      console.log('Mise à jour du profil avec:', mappedUpdates)
+
       const { error } = await supabase
         .from('users')
-        .update(updates)
+        .update(mappedUpdates)
         .eq('id', user.id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Erreur lors de la mise à jour du profil:', error)
+        throw error
+      }
+
       await fetchUserProfile(user.id)
       return { error: null }
     } catch (error) {
+      console.error('Erreur dans updateProfile:', error)
       return { error }
     }
   }
