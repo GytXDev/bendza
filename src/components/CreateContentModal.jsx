@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Play, Image as ImageIcon, FileText, Upload } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,6 @@ import {
 
 const CreateContentModal = ({ isOpen, onClose }) => {
   const { user } = useAuth();
-  const { addContent, getCreatorProfile } = useData();
   const [formData, setFormData] = useState({
     title: '',
     type: 'text',
@@ -26,7 +25,8 @@ const CreateContentModal = ({ isOpen, onClose }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  const creatorProfile = getCreatorProfile(user?.id);
+  // Données temporaires en attendant l'implémentation complète
+  const creatorProfile = { abonnement_mode: false };
 
   const contentTypes = [
     { value: 'text', label: 'Texte', icon: FileText },
@@ -36,7 +36,7 @@ const CreateContentModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       toast({
         title: "Erreur",
@@ -66,15 +66,16 @@ const CreateContentModal = ({ isOpen, onClose }) => {
         description: formData.description
       };
 
-      addContent(contentData);
-      
+      // TODO: Implémenter l'ajout de contenu
+      console.log('Contenu à ajouter:', contentData);
+
       toast({
         title: "Contenu créé !",
         description: "Votre contenu a été publié avec succès",
       });
-      
+
       onClose();
-      
+
       // Reset form
       setFormData({
         title: '',
@@ -129,21 +130,18 @@ const CreateContentModal = ({ isOpen, onClose }) => {
                     key={type.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, type: type.value })}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      formData.type === type.value
-                        ? 'border-[#FF5A00] bg-[#FF5A00]/10'
-                        : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
-                    }`}
+                    className={`p-3 rounded-lg border-2 transition-all ${formData.type === type.value
+                      ? 'border-[#FF5A00] bg-[#FF5A00]/10'
+                      : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
+                      }`}
                   >
-                    <Icon 
-                      size={24} 
-                      className={`mx-auto mb-2 ${
-                        formData.type === type.value ? 'text-[#FF5A00]' : 'text-gray-400'
-                      }`} 
+                    <Icon
+                      size={24}
+                      className={`mx-auto mb-2 ${formData.type === type.value ? 'text-[#FF5A00]' : 'text-gray-400'
+                        }`}
                     />
-                    <div className={`text-sm ${
-                      formData.type === type.value ? 'text-[#FF5A00]' : 'text-gray-400'
-                    }`}>
+                    <div className={`text-sm ${formData.type === type.value ? 'text-[#FF5A00]' : 'text-gray-400'
+                      }`}>
                       {type.label}
                     </div>
                   </button>

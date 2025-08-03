@@ -5,7 +5,8 @@ import { Helmet } from 'react-helmet'
 import { motion } from 'framer-motion'
 
 import { AuthProvider } from './contexts/AuthContext'
-import { DataProvider } from './contexts/DataContext'
+
+import { DashboardProvider } from './contexts/DashboardContext'
 import { Toaster } from './components/ui/toaster'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -49,7 +50,7 @@ function App() {
     return (
         <ErrorBoundary>
             <AuthProvider>
-                <DataProvider>
+                <DashboardProvider>
                     <Router>
                         <Helmet>
                             <title>BENDZA - Crée. Publie. Encaisse.</title>
@@ -136,9 +137,9 @@ function App() {
 
                         <Toaster />
                     </Router>
-                </DataProvider>
+                </DashboardProvider>
             </AuthProvider>
-        </ErrorBoundary>
+        </ErrorBoundary >
     )
 }
 

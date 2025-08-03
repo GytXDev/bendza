@@ -4,16 +4,17 @@ import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { MessageCircle, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 
 const Messages = () => {
   const { user } = useAuth();
-  const { getConversations, creators } = useData();
 
-  const conversations = getConversations();
+  // Données temporaires en attendant l'implémentation complète
+  const conversations = [];
+  const creators = [];
 
   const handleOpenConversation = () => {
     toast({
@@ -125,7 +126,7 @@ const Messages = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       <Button
                         onClick={handleOpenConversation}
                         className="bendza-button"
