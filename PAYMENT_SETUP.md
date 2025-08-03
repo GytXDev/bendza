@@ -127,7 +127,7 @@ CREATE INDEX idx_transactions_created_at ON transactions(created_at);
 
 Le système valide automatiquement :
 
-1. **Numéro de téléphone** : Format ivoirien (7x, 8x, 9x + 6 chiffres)
+1. **Numéro de téléphone** : Format ivoirien (074, 077, 076 + 6 chiffres = 9 chiffres total)
 2. **Montant** : Doit être positif
 3. **Référence** : Unique pour chaque transaction
 4. **Type de paiement** : Types autorisés uniquement
@@ -177,7 +177,7 @@ Le système valide automatiquement :
    - Assurez-vous que l'URL est accessible
 
 2. **"Numéro de téléphone invalide"**
-   - Format attendu : 77123456
+   - Format attendu : 077001200, 074001200, ou 076001200
    - Vérifiez la validation côté client
 
 3. **"Échec du paiement"**

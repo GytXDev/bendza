@@ -33,7 +33,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
     if (!validateMobileNumber(mobileNumber)) {
       toast({
         title: "Erreur",
-        description: "Veuillez entrer un numéro de téléphone valide (format: 77123456)",
+        description: "Veuillez entrer un numéro de téléphone valide (format: 077001200, 074001200, ou 076001200)",
         variant: "destructive",
       });
       return;
@@ -129,7 +129,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
                   className="pl-10"
-                  placeholder="Ex: 77123456"
+                  placeholder="Ex: 077001200"
                   required
                   disabled={loading}
                 />

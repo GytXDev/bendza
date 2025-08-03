@@ -74,8 +74,8 @@ export const generatePaymentReference = (type, userId) => {
  * @returns {boolean} - True si valide
  */
 export const validateMobileNumber = (mobileNumber) => {
-    // Format pour les numéros ivoiriens
-    const phoneRegex = /^(7[0-9]|8[0-9]|9[0-9])[0-9]{6}$/;
+    // Format pour les numéros ivoiriens avec 9 chiffres commençant par 074, 077, ou 076
+    const phoneRegex = /^(074|077|076)[0-9]{6}$/;
     return phoneRegex.test(mobileNumber.replace(/\s/g, ''));
 };
 
@@ -86,8 +86,8 @@ export const validateMobileNumber = (mobileNumber) => {
  */
 export const formatMobileNumber = (mobileNumber) => {
     const cleaned = mobileNumber.replace(/\D/g, '');
-    if (cleaned.length === 8) {
-        return `${cleaned.substring(0, 2)} ${cleaned.substring(2, 4)} ${cleaned.substring(4, 6)} ${cleaned.substring(6, 8)}`;
+    if (cleaned.length === 9) {
+        return `${cleaned.substring(0, 3)} ${cleaned.substring(3, 5)} ${cleaned.substring(5, 7)} ${cleaned.substring(7, 9)}`;
     }
     return mobileNumber;
 };
