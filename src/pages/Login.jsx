@@ -50,9 +50,24 @@ function Login() {
       const { error } = await signIn({ email, password })
 
       if (error) {
+        let errorMessage = error.message;
+        
+        // Gérer les erreurs spécifiques
+        if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Votre email n\'est pas encore confirmé. Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation.';
+          toast({
+            title: "Email non confirmé",
+            description: errorMessage,
+            variant: "destructive"
+          })
+          // Rediriger vers la page de confirmation
+          navigate('/confirm-email')
+          return;
+        }
+        
         toast({
           title: "Erreur de connexion",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive"
         })
       } else {
@@ -194,11 +209,17 @@ function Login() {
             </Button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-sm text-gray-400">
               Pas encore de compte ?{' '}
               <Link to="/register" className="font-medium text-orange-500 hover:text-orange-400">
                 Créer un compte
+              </Link>
+            </p>
+            <p className="text-sm text-gray-400">
+              Email non confirmé ?{' '}
+              <Link to="/confirm-email" className="font-medium text-orange-500 hover:text-orange-400">
+                Confirmer mon email
               </Link>
             </p>
           </div>

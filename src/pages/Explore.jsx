@@ -8,7 +8,6 @@ import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { useToast } from '../components/ui/use-toast'
-import { PERFORMANCE_CONFIG, performanceUtils } from '../config/performance'
 
 function Explore() {
   const [creators, setCreators] = useState([])
@@ -21,13 +20,19 @@ function Explore() {
   const [loadingMore, setLoadingMore] = useState(false)
   const { toast } = useToast()
 
-  const ITEMS_PER_PAGE = PERFORMANCE_CONFIG.ITEMS_PER_PAGE
+  const ITEMS_PER_PAGE = 12
 
   // Debounced search
   const debouncedSetSearchTerm = useCallback(
-    performanceUtils.debounce((term) => {
-      setDebouncedSearchTerm(term)
-    }, PERFORMANCE_CONFIG.DEBOUNCE_DELAY.SEARCH),
+    (() => {
+      let timeout;
+      return (term) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          setDebouncedSearchTerm(term);
+        }, 300);
+      };
+    })(),
     []
   )
 
@@ -56,7 +61,7 @@ function Explore() {
         .select(`
           id,
           name,
-          photoURL,
+          photourl,
           is_creator,
           creators (
             bio,
@@ -121,12 +126,12 @@ function Explore() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: PERFORMANCE_CONFIG.ANIMATION_DURATION.NORMAL, delay: index * 0.05 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
       className="bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-colors"
     >
       <div className="relative">
         <img
-          src={creator.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name}`}
+                          src={creator.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name}`}
           alt={creator.name}
           className="w-full h-48 object-cover"
           loading="lazy"
@@ -200,10 +205,10 @@ function Explore() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: PERFORMANCE_CONFIG.ANIMATION_DURATION.NORMAL }}
+          transition={{ duration: 0.5 }}
           className="mb-8"
         >
           <h1 className="text-4xl font-bold text-white mb-2">Explorer</h1>
@@ -211,10 +216,10 @@ function Explore() {
         </motion.div>
 
         {/* Search and Filters */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: PERFORMANCE_CONFIG.ANIMATION_DURATION.NORMAL, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           className="mb-8 space-y-4"
         >
           <div className="flex flex-col md:flex-row gap-4">
@@ -258,10 +263,10 @@ function Explore() {
 
         {/* Creators Grid */}
         {filteredCreators.length === 0 ? (
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: PERFORMANCE_CONFIG.ANIMATION_DURATION.NORMAL }}
+            transition={{ duration: 0.5 }}
             className="text-center py-12"
           >
             <div className="text-gray-400 text-lg mb-4">
@@ -281,10 +286,10 @@ function Explore() {
 
             {/* Load More Button */}
             {hasMore && (
-              <motion.div
+              <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: PERFORMANCE_CONFIG.ANIMATION_DURATION.NORMAL }}
+                transition={{ duration: 0.5 }}
                 className="text-center mt-8"
               >
                 <Button

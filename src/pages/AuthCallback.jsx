@@ -37,7 +37,7 @@ function AuthCallback() {
                                     id: session.user.id,
                                     email: session.user.email,
                                     name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-                                    photoURL: session.user.user_metadata?.avatar_url,
+                                    photourl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null,
                                     is_creator: false
                                 }
                             ])

@@ -1,26 +1,28 @@
 
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
 import { motion } from 'framer-motion'
 
 import { AuthProvider } from './contexts/AuthContext'
+import { DataProvider } from './contexts/DataContext'
 import { Toaster } from './components/ui/toaster'
-import LazyLoader from './components/LazyLoader'
+import ErrorBoundary from './components/ErrorBoundary'
 
-// Lazy load pages for better performance
-const HomePage = lazy(() => import('./pages/HomePage'))
-const Login = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
-const Explore = lazy(() => import('./pages/Explore'))
-const CreatorProfile = lazy(() => import('./pages/CreatorProfile'))
-const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard'))
-const Messages = lazy(() => import('./pages/Messages'))
-const Profile = lazy(() => import('./pages/Profile'))
-const Subscriptions = lazy(() => import('./pages/Subscriptions'))
-const Purchases = lazy(() => import('./pages/Purchases'))
-const BecomeCreator = lazy(() => import('./pages/BecomeCreator'))
-const AuthCallback = lazy(() => import('./pages/AuthCallback'))
+// Import direct des pages (sans lazy loading)
+import HomePage from './pages/HomePage'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Explore from './pages/Explore'
+import CreatorProfile from './pages/CreatorProfile'
+import CreatorDashboard from './pages/CreatorDashboard'
+import Messages from './pages/Messages'
+import Profile from './pages/Profile'
+import Subscriptions from './pages/Subscriptions'
+import Purchases from './pages/Purchases'
+import BecomeCreator from './pages/BecomeCreator'
+import AuthCallback from './pages/AuthCallback'
+import EmailConfirmation from './pages/EmailConfirmation'
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute'
@@ -43,96 +45,100 @@ const PageSkeleton = () => (
 )
 
 function App() {
+
     return (
-        <AuthProvider>
-            <Router>
-                <Helmet>
-                    <title>BENDZA - Crée. Publie. Encaisse.</title>
-                    <meta name="description" content="BENDZA: Crée. Publie. Encaisse. Plateforme de publication et monétisation de contenus exclusifs pour influenceurs." />
-                </Helmet>
+        <ErrorBoundary>
+            <AuthProvider>
+                <DataProvider>
+                    <Router>
+                        <Helmet>
+                            <title>BENDZA - Crée. Publie. Encaisse.</title>
+                            <meta name="description" content="BENDZA: Crée. Publie. Encaisse. Plateforme de publication et monétisation de contenus exclusifs pour influenceurs." />
+                        </Helmet>
 
-                <div className="min-h-screen bg-black text-white">
-                    <Suspense fallback={<PageSkeleton />}>
-                        <Routes>
-                            {/* Public routes */}
-                            <Route path="/" element={<HomePage />} />
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/register" element={<Register />} />
-                            <Route path="/explore" element={<Explore />} />
-                            <Route path="/creator/:creatorId" element={<CreatorProfile />} />
-                            <Route path="/auth/callback" element={<AuthCallback />} />
+                        <div className="min-h-screen bg-black text-white">
+                            <Routes>
+                                {/* Public routes */}
+                                <Route path="/" element={<HomePage />} />
+                                <Route path="/login" element={<Login />} />
+                                <Route path="/register" element={<Register />} />
+                                                        <Route path="/explore" element={<Explore />} />
+                        <Route path="/creator/:creatorId" element={<CreatorProfile />} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="/confirm-email" element={<EmailConfirmation />} />
 
-                            {/* Protected routes */}
-                            <Route path="/dashboard" element={
-                                <CreatorRoute>
-                                    <Layout>
-                                        <CreatorDashboard />
-                                    </Layout>
-                                </CreatorRoute>
-                            } />
+                                {/* Protected routes */}
+                                <Route path="/dashboard" element={
+                                    <CreatorRoute>
+                                        <Layout>
+                                            <CreatorDashboard />
+                                        </Layout>
+                                    </CreatorRoute>
+                                } />
 
-                            <Route path="/messages" element={
-                                <ProtectedRoute>
-                                    <Layout>
-                                        <Messages />
-                                    </Layout>
-                                </ProtectedRoute>
-                            } />
+                                <Route path="/messages" element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <Messages />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                } />
 
-                            <Route path="/profile" element={
-                                <ProtectedRoute>
-                                    <Layout>
-                                        <Profile />
-                                    </Layout>
-                                </ProtectedRoute>
-                            } />
+                                <Route path="/profile" element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <Profile />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                } />
 
-                            <Route path="/subscriptions" element={
-                                <ProtectedRoute>
-                                    <Layout>
-                                        <Subscriptions />
-                                    </Layout>
-                                </ProtectedRoute>
-                            } />
+                                <Route path="/subscriptions" element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <Subscriptions />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                } />
 
-                            <Route path="/purchases" element={
-                                <ProtectedRoute>
-                                    <Layout>
-                                        <Purchases />
-                                    </Layout>
-                                </ProtectedRoute>
-                            } />
+                                <Route path="/purchases" element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <Purchases />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                } />
 
-                            <Route path="/become-creator" element={
-                                <ProtectedRoute>
-                                    <Layout>
-                                        <BecomeCreator />
-                                    </Layout>
-                                </ProtectedRoute>
-                            } />
+                                <Route path="/become-creator" element={
+                                    <ProtectedRoute>
+                                        <Layout>
+                                            <BecomeCreator />
+                                        </Layout>
+                                    </ProtectedRoute>
+                                } />
 
-                            {/* 404 route */}
-                            <Route path="*" element={
-                                <motion.div
-                                    initial={{ opacity: 0, y: -50 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                                    className="min-h-screen flex flex-col items-center justify-center p-4"
-                                >
-                                    <h1 className="text-5xl font-bold text-orange-500 mb-4">404</h1>
-                                    <p className="text-xl text-beige-200 mb-2">Page non trouvée</p>
-                                    <p className="text-md text-gray-400">
-                                        La page que vous recherchez n'existe pas.
-                                    </p>
-                                </motion.div>
-                            } />
-                        </Routes>
-                    </Suspense>
-                </div>
+                                {/* 404 route */}
+                                <Route path="*" element={
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -50 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                                        className="min-h-screen flex flex-col items-center justify-center p-4"
+                                    >
+                                        <h1 className="text-5xl font-bold text-orange-500 mb-4">404</h1>
+                                        <p className="text-xl text-beige-200 mb-2">Page non trouvée</p>
+                                        <p className="text-md text-gray-400">
+                                            La page que vous recherchez n'existe pas.
+                                        </p>
+                                    </motion.div>
+                                } />
+                            </Routes>
+                        </div>
 
-                <Toaster />
-            </Router>
-        </AuthProvider>
+                        <Toaster />
+                    </Router>
+                </DataProvider>
+            </AuthProvider>
+        </ErrorBoundary>
     )
 }
 

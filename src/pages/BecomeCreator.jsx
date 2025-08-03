@@ -1,9 +1,9 @@
 
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Helmet } from 'react-helmet'
-import { Crown, Star, Users, DollarSign, CheckCircle } from 'lucide-react'
+import { Crown } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { useToast } from '../components/ui/use-toast'
@@ -11,7 +11,7 @@ import PaymentModal from '../components/PaymentModal'
 
 function BecomeCreator() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const { userProfile, becomeCreator } = useAuth()
+  const { user, userProfile, loading, becomeCreator } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -45,19 +45,60 @@ function BecomeCreator() {
     }
   }
 
-  // Memoize the creator check to avoid unnecessary re-renders
-  const isAlreadyCreator = useMemo(() => userProfile?.is_creator, [userProfile?.is_creator])
-
-  if (isAlreadyCreator) {
+  // Loading state
+  if (loading) {
     return (
-      <motion.div
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-white text-xl">Chargement...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Si pas d'utilisateur connecté
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-white text-xl mb-4">Erreur d'authentification</div>
+          <Button onClick={() => navigate('/login')}>
+            Se connecter
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Si pas de profil utilisateur
+  if (!userProfile) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-white text-xl mb-4">Erreur de profil utilisateur</div>
+          <p className="text-gray-400 mb-4">Impossible de charger votre profil</p>
+          <Button onClick={() => window.location.reload()}>
+            Actualiser la page
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Si déjà créateur
+  if (userProfile?.is_creator) {
+    return (
+      <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
         className="min-h-screen bg-black text-white flex items-center justify-center p-4"
       >
         <div className="text-center">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Crown className="w-10 h-10 text-white" />
+          </div>
           <h1 className="text-3xl font-bold text-white mb-4">Vous êtes déjà créateur !</h1>
           <p className="text-gray-400 mb-6">
             Votre profil créateur est déjà activé. Accédez à votre tableau de bord pour commencer.
@@ -74,7 +115,7 @@ function BecomeCreator() {
   }
 
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -93,7 +134,7 @@ function BecomeCreator() {
           className="text-center mb-12"
         >
           <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Crown className="w-10 h-10 text-white" />
+            <img src="/logo.png" alt="BENDZA" className="w-12 h-12" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">
             Devenez créateur sur BENDZA

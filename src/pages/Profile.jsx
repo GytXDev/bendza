@@ -14,7 +14,7 @@ function Profile() {
   const [formData, setFormData] = useState({
     name: userProfile?.name || '',
     email: userProfile?.email || '',
-    photoURL: userProfile?.photoURL || ''
+    photourl: userProfile?.photourl || ''
   })
   const { toast } = useToast()
 
@@ -88,7 +88,7 @@ function Profile() {
           <div className="text-center mb-8">
             <div className="relative inline-block">
               <img
-                src={userProfile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name}`}
+                src={userProfile?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name}`}
                 alt={userProfile?.name}
                 className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
               />
@@ -143,8 +143,8 @@ function Profile() {
               </label>
               <Input
                 type="url"
-                name="photoURL"
-                value={formData.photoURL}
+                name="photourl"
+                value={formData.photourl}
                 onChange={handleChange}
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 placeholder="https://example.com/photo.jpg"

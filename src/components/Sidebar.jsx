@@ -76,12 +76,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="mt-8 pt-6 border-t border-[#2a2a2a]">
           <div className="flex items-center space-x-3">
             <img
-              src={user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`}
-              alt={user?.name}
+                              src={userProfile?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name || user?.email}`}
+              alt={userProfile?.name || user?.email}
               className="w-10 h-10 rounded-full"
             />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-sm font-medium text-white truncate">{userProfile?.name || user?.email}</p>
               <p className="text-xs text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>

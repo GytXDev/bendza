@@ -215,7 +215,7 @@ function CreatorProfile() {
         <div className="bg-gray-900 rounded-lg p-6 mb-8">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             <img
-              src={creator.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name}`}
+                              src={creator.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name}`}
               alt={creator.name}
               className="w-24 h-24 rounded-full object-cover"
             />

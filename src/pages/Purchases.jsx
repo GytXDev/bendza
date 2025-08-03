@@ -38,7 +38,7 @@ function Purchases() {
               users (
                 id,
                 name,
-                photoURL
+                photourl
               )
             )
           )

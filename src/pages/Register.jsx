@@ -68,7 +68,7 @@ function Register() {
           title: "Inscription réussie",
           description: "Vérifiez votre email pour confirmer votre compte"
         })
-        navigate('/login')
+        navigate('/confirm-email')
       }
     } catch (error) {
       toast({

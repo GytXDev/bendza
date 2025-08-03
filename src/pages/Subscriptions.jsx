@@ -34,7 +34,7 @@ function Subscriptions() {
             users (
               id,
               name,
-              photoURL
+              photourl
             )
           )
         `)
@@ -119,7 +119,7 @@ function Subscriptions() {
                 <div className="p-6">
                   <div className="flex items-center space-x-4 mb-4">
                     <img
-                      src={subscription.creators?.users?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${subscription.creators?.users?.name}`}
+                      src={subscription.creators?.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${subscription.creators?.users?.name}`}
                       alt={subscription.creators?.users?.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />

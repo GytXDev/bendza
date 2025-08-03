@@ -24,7 +24,7 @@ const Messages = () => {
 
   const getCreatorInfo = (userId) => {
     const creator = creators.find(c => c.user_id === userId);
-    return creator || { name: 'Utilisateur inconnu', photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}` };
+    return creator || { name: 'Utilisateur inconnu', photourl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}` };
   };
 
   return (
@@ -109,7 +109,7 @@ const Messages = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <img
-                          src={creatorInfo.photoURL}
+                          src={creatorInfo.photourl}
                           alt={creatorInfo.name}
                           className="w-12 h-12 rounded-full border-2 border-[#FF5A00]"
                         />

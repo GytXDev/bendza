@@ -18,10 +18,14 @@ export const DataProvider = ({ children }) => {
   const [content, setContent] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    if (isInitialized) return;
+    
     loadData();
-  }, []);
+    setIsInitialized(true);
+  }, [isInitialized]);
 
   const loadData = () => {
     // Load creators
@@ -37,7 +41,7 @@ export const DataProvider = ({ children }) => {
           bio: 'Créatrice de contenu lifestyle et mode. Partage mes looks du jour et conseils beauté !',
           abonnement_mode: true,
           abonnement_price: 2500,
-          photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=marie',
+          photourl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=marie',
           followers: 1250,
           content_count: 45
         },
@@ -47,7 +51,7 @@ export const DataProvider = ({ children }) => {
           bio: 'Fitness coach et nutritionniste. Transforme ton corps avec mes programmes exclusifs !',
           abonnement_mode: false,
           abonnement_price: 0,
-          photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex',
+          photourl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex',
           followers: 890,
           content_count: 32
         }
