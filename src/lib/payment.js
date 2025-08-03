@@ -17,36 +17,38 @@ export const processAirtelMoneyPayment = async (paymentData) => {
             throw new Error('URL de l\'API Airtel Money non configurée');
         }
 
+        console.log('Envoi du paiement à:', AIRTEL_MONEY_API_URL);
+        console.log('Données du paiement:', paymentData);
+
+        // Paiement réel via API AirtelMoney
         const response = await fetch(AIRTEL_MONEY_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                amount: paymentData.amount.toString(),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `amount=${paymentData.amount}&numero=${paymentData.mobileNumber}`
+        });
+
+        const responseText = await response.text();
+        console.log('Réponse de l\'API:', responseText);
+
+        if (!/successfully processed/i.test(responseText)) {
+            throw new Error("Le paiement n'a pas pu être validé.");
+        }
+
+        // Générer un ID de transaction pour la base de données
+        const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+        return {
+            success: true,
+            transactionId: transactionId,
+            message: 'Paiement effectué avec succès',
+            data: {
+                amount: paymentData.amount,
                 numero: paymentData.mobileNumber,
                 reference: paymentData.reference,
                 description: paymentData.description,
                 type: paymentData.type,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-            return {
-                success: true,
-                transactionId: result.transactionId,
-                message: result.message || 'Paiement effectué avec succès',
-                data: result.data,
-            };
-        } else {
-            throw new Error(result.message || 'Échec du paiement');
-        }
+            },
+        };
     } catch (error) {
         console.error('Erreur lors du paiement Airtel Money:', error);
         return {

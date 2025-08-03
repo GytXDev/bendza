@@ -48,23 +48,15 @@ if (!$amount || !$numero || !$reference) {
 // Traitement du paiement Airtel Money
 try {
     // Votre logique de paiement Airtel Money ici
-    $transactionId = processAirtelMoneyPayment($amount, $numero, $reference);
+    $result = processAirtelMoneyPayment($amount, $numero);
     
-    echo json_encode([
-        'success' => true,
-        'transactionId' => $transactionId,
-        'message' => 'Paiement effectué avec succès',
-        'data' => [
-            'amount' => $amount,
-            'numero' => $numero,
-            'reference' => $reference
-        ]
-    ]);
+    if ($result) {
+        echo "successfully processed";
+    } else {
+        echo "payment failed";
+    }
 } catch (Exception $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
+    echo "payment failed: " . $e->getMessage();
 }
 
 function processAirtelMoneyPayment($amount, $numero, $reference) {
@@ -77,20 +69,13 @@ function processAirtelMoneyPayment($amount, $numero, $reference) {
 
 ### Format de Réponse
 
-L'API doit retourner une réponse JSON avec cette structure :
+L'API doit retourner une réponse texte contenant "successfully processed" :
 
-```json
-{
-  "success": true,
-  "transactionId": "TXN_1234567890_1234",
-  "message": "Paiement effectué avec succès",
-  "data": {
-    "amount": 999,
-    "numero": "77123456",
-    "reference": "CREATOR_ACTIVATION_USER123_1234567890_ABC123"
-  }
-}
 ```
+successfully processed
+```
+
+Le système vérifie la présence de cette phrase dans la réponse pour valider le paiement.
 
 ## 🗄️ Base de Données
 
