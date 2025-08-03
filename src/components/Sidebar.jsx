@@ -41,9 +41,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* Logo */}
         <div className="mb-8">
           <Link to="/" className="flex items-center space-x-3" onClick={onClose}>
-            <div className="w-10 h-10 bendza-gradient rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">B</span>
-            </div>
+            <img src="/logo.png" alt="BENDZA" className="w-10 h-10 rounded-lg" />
             <div>
               <h1 className="text-xl font-bold text-white">BENDZA</h1>
               <p className="text-xs text-gray-400">Crée. Publie. Encaisse.</p>
@@ -76,7 +74,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="mt-8 pt-6 border-t border-[#2a2a2a]">
           <div className="flex items-center space-x-3">
             <img
-                              src={userProfile?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name || user?.email}`}
+              src={userProfile?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name || user?.email}`}
               alt={userProfile?.name || user?.email}
               className="w-10 h-10 rounded-full"
             />

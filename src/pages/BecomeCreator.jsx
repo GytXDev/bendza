@@ -8,38 +8,48 @@ import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { useToast } from '../components/ui/use-toast'
 import PaymentModal from '../components/PaymentModal'
+import { usePaymentTransaction } from '../hooks/usePaymentTransaction'
 
 function BecomeCreator() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const { user, userProfile, loading, becomeCreator } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { recordPaymentTransaction } = usePaymentTransaction()
 
   const handleBecomeCreator = () => {
     setShowPaymentModal(true)
   }
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentData) => {
     try {
+      // Enregistrer la transaction dans la base de données
+      await recordPaymentTransaction({
+        ...paymentData,
+        description: 'Activation du profil créateur BENDZA',
+      });
+
+      // Activer le profil créateur
       const { error } = await becomeCreator()
 
       if (error) {
         toast({
           title: "Erreur",
-          description: "Impossible d'activer votre profil créateur",
+          description: "Paiement effectué mais impossible d'activer votre profil créateur. Contactez le support.",
           variant: "destructive"
         })
       } else {
         toast({
           title: "Félicitations !",
-          description: "Vous êtes maintenant créateur sur BENDZA"
+          description: "Paiement effectué et profil créateur activé avec succès !"
         })
         navigate('/dashboard')
       }
     } catch (error) {
+      console.error('Erreur lors de l\'activation du créateur:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur inattendue s'est produite",
+        description: "Paiement effectué mais erreur lors de l'activation. Contactez le support.",
         variant: "destructive"
       })
     }

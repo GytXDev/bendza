@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { X, CreditCard, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -12,18 +12,28 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  processAirtelMoneyPayment,
+  generatePaymentReference,
+  validateMobileNumber,
+  getPaymentDescription
+} from '@/lib/payment';
+import { useAuth } from '@/contexts/AuthContext';
 
-const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName }) => {
+const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, contentTitle }) => {
   const [mobileNumber, setMobileNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   const handlePayment = useCallback(async (e) => {
     e.preventDefault();
 
-    if (!mobileNumber || mobileNumber.length < 8) {
+    // Validation du numéro de téléphone
+    if (!validateMobileNumber(mobileNumber)) {
       toast({
         title: "Erreur",
-        description: "Veuillez entrer un numéro de téléphone valide",
+        description: "Veuillez entrer un numéro de téléphone valide (format: 77123456)",
         variant: "destructive",
       });
       return;
@@ -32,29 +42,50 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName })
     setLoading(true);
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Génération de la référence unique
+      const reference = generatePaymentReference(type, user?.id || 'anonymous');
 
-      // In real implementation, this would call the actual API
-      // const response = await fetch('https://gytx.dev/api/airtelmoney-web.php', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      //   body: `amount=${amount}&numero=${mobileNumber}`
-      // });
+      // Description du paiement
+      const description = getPaymentDescription(type, { creatorName, contentTitle });
 
-      // Simulate successful payment
-      onSuccess({ mobileNumber, amount });
+      // Appel à l'API Airtel Money
+      const paymentResult = await processAirtelMoneyPayment({
+        amount,
+        mobileNumber: mobileNumber.replace(/\s/g, ''),
+        type,
+        reference,
+        description,
+      });
+
+      if (paymentResult.success) {
+        toast({
+          title: "Paiement réussi !",
+          description: paymentResult.message,
+        });
+
+        // Appel du callback de succès avec les données du paiement
+        onSuccess({
+          mobileNumber,
+          amount,
+          transactionId: paymentResult.transactionId,
+          reference,
+          type,
+        });
+      } else {
+        throw new Error(paymentResult.error);
+      }
 
     } catch (error) {
+      console.error('Erreur lors du paiement:', error);
       toast({
         title: "Erreur de paiement",
-        description: "Le paiement n'a pas pu être traité. Veuillez réessayer.",
+        description: error.message || "Le paiement n'a pas pu être traité. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [mobileNumber, amount, onSuccess]);
+  }, [mobileNumber, amount, type, creatorName, contentTitle, user?.id, onSuccess, toast]);
 
   const handleClose = useCallback(() => {
     if (!loading) {
