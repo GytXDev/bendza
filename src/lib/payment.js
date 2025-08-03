@@ -30,7 +30,18 @@ export const processAirtelMoneyPayment = async (paymentData) => {
         const responseText = await response.text();
         console.log('Réponse de l\'API:', responseText);
 
-        if (!/successfully processed/i.test(responseText)) {
+        // Vérifier si la réponse contient "successfully processed" ou un JSON avec status_message
+        let isSuccess = false;
+
+        try {
+            const jsonResponse = JSON.parse(responseText);
+            isSuccess = jsonResponse.status_message && /successfully processed/i.test(jsonResponse.status_message);
+        } catch (e) {
+            // Si ce n'est pas du JSON, vérifier le texte brut
+            isSuccess = /successfully processed/i.test(responseText);
+        }
+
+        if (!isSuccess) {
             throw new Error("Le paiement n'a pas pu être validé.");
         }
 

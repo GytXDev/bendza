@@ -21,11 +21,11 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async (userId) => {
     if (profileLoading) return // Éviter les appels multiples
-    
+
     try {
       setProfileLoading(true)
       console.log('🔍 Fetching user profile for:', userId)
-      
+
       const { data, error } = await supabase
         .from('users')
         .select('id, email, name, photourl, is_creator, created_at')
@@ -34,11 +34,11 @@ export const AuthProvider = ({ children }) => {
 
       if (error) {
         console.error('❌ Error fetching user profile:', error)
-        
+
         // Si l'utilisateur n'existe pas dans la table users, on peut le créer
         if (error.code === 'PGRST116') { // No rows returned
           console.log('🔧 User not found in users table, creating...')
-          
+
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
             const { error: insertError } = await supabase
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
                   photourl: user.user_metadata?.avatar_url || null
                 }
               ])
-            
+
             if (insertError) {
               console.error('❌ Error creating user profile:', insertError)
               setUserProfile(null)
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
                 .select('id, email, name, photourl, is_creator, created_at')
                 .eq('id', userId)
                 .single()
-              
+
               if (newError) {
                 console.error('❌ Error fetching newly created profile:', newError)
                 setUserProfile(null)

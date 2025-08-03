@@ -137,19 +137,6 @@ function Profile() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                URL de la photo de profil
-              </label>
-              <Input
-                type="url"
-                name="photourl"
-                value={formData.photourl}
-                onChange={handleChange}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-                placeholder="https://example.com/photo.jpg"
-              />
-            </div>
 
             <div className="pt-6">
               <Button

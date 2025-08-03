@@ -62,10 +62,10 @@ function App() {
                                 <Route path="/" element={<HomePage />} />
                                 <Route path="/login" element={<Login />} />
                                 <Route path="/register" element={<Register />} />
-                                                        <Route path="/explore" element={<Explore />} />
-                        <Route path="/creator/:creatorId" element={<CreatorProfile />} />
-                        <Route path="/auth/callback" element={<AuthCallback />} />
-                        <Route path="/confirm-email" element={<EmailConfirmation />} />
+                                <Route path="/explore" element={<Explore />} />
+                                <Route path="/creator/:creatorId" element={<CreatorProfile />} />
+                                <Route path="/auth/callback" element={<AuthCallback />} />
+                                <Route path="/confirm-email" element={<EmailConfirmation />} />
 
                                 {/* Protected routes */}
                                 <Route path="/dashboard" element={

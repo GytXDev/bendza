@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   amount INTEGER NOT NULL,
   currency TEXT DEFAULT 'XOF',
   status TEXT CHECK (status IN ('pending', 'paid', 'cancelled', 'failed', 'refunded')) DEFAULT 'pending',
-  type TEXT CHECK (type IN ('abonnement', 'achat_unitaire', 'donation')) NOT NULL,
+  type TEXT CHECK (type IN ('abonnement', 'achat_unitaire', 'donation', 'creator_activation')) NOT NULL,
   payment_method TEXT CHECK (payment_method IN ('mobile_money', 'card', 'bank_transfer')) NOT NULL,
   payment_reference TEXT,
   transaction_id TEXT,
