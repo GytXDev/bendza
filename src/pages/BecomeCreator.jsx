@@ -126,7 +126,7 @@ function BecomeCreator() {
         <meta name="description" content="Rejoignez BENDZA en tant que créateur et monétisez votre contenu" />
       </Helmet>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 mt-16 md:mt-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

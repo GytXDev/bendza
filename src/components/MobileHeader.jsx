@@ -12,14 +12,12 @@ const MobileHeader = ({ onMenuClick }) => {
         >
           <Menu size={24} />
         </button>
-        
+
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bendza-gradient rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">B</span>
-          </div>
+          <img src="/logo.png" alt="BENDZA" className="w-8 h-8 rounded-lg" />
           <span className="text-white font-bold">BENDZA</span>
         </div>
-        
+
         <div className="w-10"></div>
       </div>
     </header>
