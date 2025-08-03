@@ -9,62 +9,58 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/auth/callback",
-      "dest": "/index.html"
+      "source": "/auth/callback",
+      "destination": "/index.html"
     },
     {
-      "src": "/confirm-email",
-      "dest": "/index.html"
+      "source": "/confirm-email",
+      "destination": "/index.html"
     },
     {
-      "src": "/dashboard",
-      "dest": "/index.html"
+      "source": "/dashboard",
+      "destination": "/index.html"
     },
     {
-      "src": "/messages",
-      "dest": "/index.html"
+      "source": "/messages",
+      "destination": "/index.html"
     },
     {
-      "src": "/profile",
-      "dest": "/index.html"
+      "source": "/profile",
+      "destination": "/index.html"
     },
     {
-      "src": "/subscriptions",
-      "dest": "/index.html"
+      "source": "/subscriptions",
+      "destination": "/index.html"
     },
     {
-      "src": "/purchases",
-      "dest": "/index.html"
+      "source": "/purchases",
+      "destination": "/index.html"
     },
     {
-      "src": "/become-creator",
-      "dest": "/index.html"
+      "source": "/become-creator",
+      "destination": "/index.html"
     },
     {
-      "src": "/creator/(.*)",
-      "dest": "/index.html"
+      "source": "/creator/(.*)",
+      "destination": "/index.html"
     },
     {
-      "src": "/explore",
-      "dest": "/index.html"
+      "source": "/explore",
+      "destination": "/index.html"
     },
     {
-      "src": "/login",
-      "dest": "/index.html"
+      "source": "/login",
+      "destination": "/index.html"
     },
     {
-      "src": "/register",
-      "dest": "/index.html"
+      "source": "/register",
+      "destination": "/index.html"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
-      "dest": "/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
