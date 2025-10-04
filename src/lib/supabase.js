@@ -9,7 +9,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    storageKey: 'bendza-auth-token'
+    storageKey: 'bendza-auth-token',
+    flowType: 'pkce',
+    debug: process.env.NODE_ENV === 'development'
   }
 })
 

@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, CreditCard, Smartphone } from 'lucide-react';
+import { X, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -83,7 +83,6 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <CreditCard className="text-[#FF5A00]" size={24} />
             <span>Paiement Mobile Money</span>
           </DialogTitle>
           <DialogDescription>

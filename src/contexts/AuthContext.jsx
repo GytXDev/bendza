@@ -1,245 +1,337 @@
+// src/contexts/AuthContext.jsx
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { supabase } from '../lib/supabase';
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-
-const AuthContext = createContext({})
+const AuthContext = createContext();
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [userProfile, setUserProfile] = useState(null)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const lastProfileUpdate = useRef(0);
+  const initialized = useRef(false);
 
-  // Fonction simple pour récupérer le profil utilisateur
+  // Upsert user in DB (ne pas écraser les données existantes)
+  const upsertUser = async (user) => {
+    if (!user) {
+      console.log('⚠️ AuthContext: upsertUser called with no user');
+      return;
+    }
+    
+    console.log('💾 AuthContext: Upserting user to database:', user.email);
+    
+    try {
+      // D'abord, vérifier si l'utilisateur existe déjà
+      const { data: existingUser, error: selectError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (selectError) {
+        console.error('❌ AuthContext: Error checking existing user:', selectError);
+        throw selectError;
+      }
+      
+      const userData = {
+        id: user.id,
+        name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Utilisateur',
+        email: user.email,
+        photourl: user.user_metadata?.avatar_url || null
+      };
+      
+      if (existingUser) {
+        // L'utilisateur existe, le mettre à jour
+        console.log('🔄 AuthContext: Updating existing user');
+        const { data, error } = await supabase
+          .from('users')
+          .update(userData)
+          .eq('id', user.id)
+          .select();
+        
+        if (error) {
+          console.error('❌ AuthContext: Error updating user:', error);
+          throw error;
+        }
+        
+        console.log('✅ AuthContext: User updated successfully:', data);
+      } else {
+        // L'utilisateur n'existe pas, l'insérer
+        console.log('➕ AuthContext: Inserting new user');
+      const { data, error } = await supabase
+        .from('users')
+          .insert([userData])
+          .select();
+
+      if (error) {
+          console.error('❌ AuthContext: Error inserting user:', error);
+          throw error;
+        }
+        
+        console.log('✅ AuthContext: User inserted successfully:', data);
+      }
+    } catch (error) {
+      console.error('❌ AuthContext: Upsert user failed:', error);
+      throw error;
+    }
+  };
+
+  // Fetch user profile from DB
   const fetchUserProfile = async (userId) => {
+    console.log('📊 AuthContext: Fetching profile for user ID:', userId);
+    
     try {
       const { data, error } = await supabase
         .from('users')
         .select('id, email, name, photourl, is_creator, created_at, updated_at')
         .eq('id', userId)
-        .single()
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // Utilisateur n'existe pas, le créer
-          const createdUser = await createUserFromAuth(userId)
-          if (createdUser) {
-            setUserProfile(createdUser)
-          }
-          return createdUser
-        }
-        setUserProfile(null)
-        return null
+        console.error('❌ AuthContext: Error fetching user profile:', error);
+        return null;
       }
       
-      setUserProfile(data)
-      return data
+      console.log('📊 AuthContext: Profile data received:', data);
+      return data;
     } catch (error) {
-      console.error('Error fetching user profile:', error)
-      setUserProfile(null)
-      return null
+      console.error('❌ AuthContext: Exception in fetchUserProfile:', error);
+      return null;
     }
-  }
+  };
 
-  // Fonction simple pour créer un utilisateur
-  const createUserFromAuth = async (userId) => {
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
+  // Handle session
+  const handleSession = async (session) => {
+    console.log('🔍 AuthContext: handleSession called with:', session?.user?.email || 'no user');
+    
+    if (session?.user) {
+      const { user: authUser } = session;
+      console.log('👤 AuthContext: Processing user:', authUser.email);
       
-      if (!authUser) return null
-
-      const userData = {
-        id: userId,
-        email: authUser.email,
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Utilisateur',
-        photourl: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null,
-        is_creator: false
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .insert([userData])
-        .select()
-        .single()
-
-      if (error) {
-        if (error.code === '23505') {
-          // Utilisateur existe déjà, le récupérer
-          const { data: existingUser, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single()
-          
-          if (!fetchError && existingUser) {
-            return existingUser
-          }
-        }
-        console.error('Error creating user:', error)
-        return null
-      }
-
-      return data
-    } catch (error) {
-      console.error('Error in createUserFromAuth:', error)
-      return null
-    }
-  }
-
-  useEffect(() => {
-    // Récupération initiale de la session
-    const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        console.log('💾 AuthContext: Upserting user...');
+        await upsertUser(authUser);
+        console.log('✅ AuthContext: User upserted successfully');
         
-        if (session?.user) {
-          setUser(session.user)
-          await fetchUserProfile(session.user.id)
-        } else {
-          setUser(null)
-          setUserProfile(null)
+        console.log('📊 AuthContext: Fetching user profile...');
+        const profile = await fetchUserProfile(authUser.id);
+        console.log('📊 AuthContext: Profile fetched:', profile);
+        console.log('🖼️ AuthContext: Photo sources - DB:', profile?.photourl, 'Auth:', authUser.user_metadata?.avatar_url);
+        
+      // Utiliser la photo de la base de données si elle existe, sinon celle de Supabase Auth
+      const finalPhotourl = profile?.photourl || authUser.user_metadata?.avatar_url || null;
+      console.log('🖼️ AuthContext: Final photo URL selected:', finalPhotourl);
+      
+      // Vérifier si on vient de faire une mise à jour récente (dans les 5 dernières secondes)
+      const recentUpdate = Date.now() - lastProfileUpdate.current < 5000;
+      console.log('⏰ AuthContext: Recent profile update?', recentUpdate, 'Time since last update:', Date.now() - lastProfileUpdate.current);
+      
+      // Si on vient de faire une mise à jour récente, ne pas écraser les données
+      if (recentUpdate) {
+        console.log('⚠️ AuthContext: Skipping user data update due to recent profile update');
+        setLoading(false);
+        return;
+      }
+      
+      const userData = {
+        id: authUser.id,
+        email: authUser.email,
+        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Utilisateur',
+        photourl: finalPhotourl,
+        is_creator: profile?.is_creator || false,
+        profile: profile
+      };
+        
+        console.log('🎯 AuthContext: Setting user data:', userData);
+        setUser(userData);
+        
+        // Afficher un message de succès seulement si c'est une nouvelle connexion
+        if (session && session.user) {
+          console.log('✅ AuthContext: User successfully authenticated:', userData.email);
+        }
+        
+        // S'assurer que loading est mis à false après setUser
+        setLoading(false);
+      } catch (error) {
+        console.error('❌ AuthContext: Error in handleSession:', error);
+        setUser(null);
+        setLoading(false);
+      }
+    } else {
+      console.log('🚫 AuthContext: No session, setting user to null');
+      setUser(null);
+      setLoading(false);
+    }
+  };
+
+  // On mount, subscribe to auth changes
+  useEffect(() => {
+    console.log('🚀 AuthContext: useEffect started');
+    
+    let mounted = true;
+    let listener = null;
+    
+    const initializeAuth = async () => {
+      try {
+        console.log('🔧 AuthContext: Initializing authentication...');
+        
+        // Récupérer la session initiale
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('🔍 AuthContext: Initial session retrieved:', session?.user?.email || 'no user', error);
+        
+        if (mounted) {
+          await handleSession(session);
+        }
+        
+        // S'abonner aux changements d'authentification
+        if (mounted) {
+          console.log('👂 AuthContext: Setting up auth state listener...');
+          const { data } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('🔄 AuthContext: Auth state change detected:', event, session?.user?.email || 'no user');
+            if (mounted) {
+              handleSession(session);
+            }
+          });
+          listener = data;
+          console.log('✅ AuthContext: Auth listener set up successfully');
         }
       } catch (error) {
-        console.error('Error getting initial session:', error)
-        setUser(null)
-        setUserProfile(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    getInitialSession()
-
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUser(session.user)
-          await fetchUserProfile(session.user.id)
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setUserProfile(null)
+        console.error('❌ AuthContext: Auth initialization error:', error);
+        if (mounted) {
+          setLoading(false);
         }
       }
-    )
+    };
+    
+    initializeAuth();
 
     return () => {
-      subscription.unsubscribe()
+      console.log('🧹 AuthContext: Cleanup - unmounting');
+      mounted = false;
+      if (listener?.subscription) {
+        listener.subscription.unsubscribe();
     }
-  }, [])
+    };
+  }, []);
 
-  const signUp = async ({ email, password, name }) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name },
-          emailRedirectTo: `${window.location.origin}/confirm-email`
-        }
-      })
-
-      if (error) throw error
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  const signIn = async ({ email, password }) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) throw error
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
+  // Google Sign In
   const signInWithGoogle = async () => {
-    try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/`
         }
-      })
+    });
+    if (error) throw error;
+    return { data, error: null };
+  };
 
-      if (error) throw error
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
+  // Sign Out
   const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
-  }
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
-  const becomeCreator = async () => {
+  // Force reset token (nettoyage complet)
+  const resetToken = async () => {
     try {
+      // Déconnexion via Supabase
+      await supabase.auth.signOut();
+      
+      // Nettoyage manuel du localStorage
+      localStorage.removeItem('bendza-auth-token');
+      localStorage.removeItem(`sb-${window.location.hostname}-auth-token`);
+      
+      // Nettoyer tous les tokens Supabase
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('supabase') || key.includes('auth-token')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      setUser(null);
+      setLoading(false);
+      
+      console.log('✅ Token réinitialisé avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors de la réinitialisation:', error);
+    }
+  };
+
+  // Become Creator
+  const becomeCreator = async () => {
+    if (!user) throw new Error('User not authenticated');
+    
       const { error } = await supabase
         .from('users')
         .update({ is_creator: true })
-        .eq('id', user.id)
+      .eq('id', user.id);
 
-      if (error) throw error
-      await fetchUserProfile(user.id)
-      return { error: null }
-    } catch (error) {
-      return { error }
-    }
-  }
+    if (error) throw error;
 
+    // Mettre à jour l'utilisateur local
+    setUser(prev => prev ? { ...prev, is_creator: true } : null);
+    return { error: null };
+  };
+
+  // Update Profile
   const updateProfile = async (updates) => {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update(updates)
-        .eq('id', user.id)
+    if (!user) throw new Error('User not authenticated');
+    
+    console.log('🔄 AuthContext: Updating profile with:', updates);
+    
+    const { error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', user.id);
 
-      if (error) throw error
-
-      // Recharger le profil
-      const profile = await fetchUserProfile(user.id)
-      setUserProfile(profile)
-      return { error: null }
-    } catch (error) {
-      return { error }
+    if (error) {
+      console.error('❌ AuthContext: Error updating profile in database:', error);
+      throw error;
     }
-  }
 
-  const value = {
-    user,
-    userProfile,
-    loading,
-    signUp,
-    signIn,
-    signInWithGoogle,
-    signOut,
-    becomeCreator,
-    updateProfile
-  }
+    console.log('✅ AuthContext: Profile updated in database successfully');
+    
+    // Enregistrer le timestamp de la mise à jour
+    lastProfileUpdate.current = Date.now();
+    
+    // Forcer une récupération du profil depuis la base de données
+    console.log('🔄 AuthContext: Refreshing profile from database...');
+    const refreshedProfile = await fetchUserProfile(user.id);
+    console.log('🔄 AuthContext: Refreshed profile:', refreshedProfile);
+    
+    // Mettre à jour l'utilisateur local avec les données fraîches de la base
+    setUser(prev => {
+      if (!prev) return null;
+      const updatedUser = { 
+        ...prev, 
+        ...updates,
+        photourl: refreshedProfile?.photourl || updates.photourl || prev.photourl,
+        profile: refreshedProfile
+      };
+      console.log('🔄 AuthContext: Updated local user state with fresh data:', updatedUser);
+      return updatedUser;
+    });
+    
+    return { error: null };
+  };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ 
+    user,
+      loading, 
+    signInWithGoogle,
+    signOut,
+      resetToken,
+    becomeCreator,
+    updateProfile
+    }}>
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};

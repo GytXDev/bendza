@@ -8,7 +8,8 @@ import {
   Star,
   BarChart3,
   LogIn,
-  UserPlus
+  UserPlus,
+  Wallet
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -26,6 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     
     if (userProfile?.is_creator) {
       menuItems.push({ icon: BarChart3, label: 'Tableau de bord', path: '/dashboard' });
+      menuItems.push({ icon: Wallet, label: 'Cashout', path: '/cashout' });
     } else {
       menuItems.push({ icon: Star, label: 'Devenir créateur', path: '/become-creator' });
     }
@@ -93,23 +95,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {!user && (
           <div className="mt-8 pt-6 border-t border-gray-800">
             <div className="text-center">
-              <p className="text-sm text-gray-400 mb-3">Connectez-vous pour accéder à plus de fonctionnalités</p>
-              <div className="space-y-2">
-                <Link
-                  to="/login"
-                  onClick={onClose}
-                  className="block w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  Se connecter
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={onClose}
-                  className="block w-full bg-transparent border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  S'inscrire
-                </Link>
-              </div>
+              <p className="text-sm text-gray-400">Connectez-vous pour accéder à plus de fonctionnalités</p>
             </div>
           </div>
         )}

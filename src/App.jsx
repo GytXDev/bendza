@@ -1,13 +1,11 @@
-
-import React, { Suspense, useEffect } from 'react'
+import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
 import { motion } from 'framer-motion'
 
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
 import { Toaster } from './components/ui/toaster'
 import ErrorBoundary from './components/ErrorBoundary'
-import LoadingScreen from './components/LoadingScreen'
 
 // Import direct des pages (sans lazy loading)
 import HomePage from './pages/HomePage'
@@ -16,85 +14,11 @@ import Register from './pages/Register'
 import CreatorDashboard from './pages/CreatorDashboard'
 import Profile from './pages/Profile'
 import BecomeCreator from './pages/BecomeCreator'
-import EmailConfirmation from './pages/EmailConfirmation'
+import Cashout from './pages/Cashout'
 
 // Components
 import RequireAuth from './components/RequireAuth'
 import Layout from './components/Layout'
-
-// App Content component that handles auth loading
-const AppContent = () => {
-    const { loading } = useAuth();
-
-    // Show loading screen during initial auth check
-    if (loading) {
-        return <LoadingScreen message="Initialisation de la plateforme..." />;
-    }
-
-    return (
-        <div className="min-h-screen bg-black text-white">
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/confirm-email" element={<EmailConfirmation />} />
-                
-                {/* Routes protégées */}
-                <Route path="/" element={
-                    <Layout>
-                        <HomePage />
-                    </Layout>
-                } />
-                
-                <Route path="/profile" element={
-                    <RequireAuth>
-                        <Layout>
-                            <Profile />
-                        </Layout>
-                    </RequireAuth>
-                } />
-                
-                <Route path="/creator" element={
-                    <RequireAuth>
-                        <Layout>
-                            <CreatorDashboard />
-                        </Layout>
-                    </RequireAuth>
-                } />
-                
-                <Route path="/become-creator" element={
-                    <RequireAuth>
-                        <Layout>
-                            <BecomeCreator />
-                        </Layout>
-                    </RequireAuth>
-                } />
-                
-                {/* 404 route */}
-                <Route path="*" element={
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className="min-h-screen flex flex-col items-center justify-center p-4"
-                    >
-                        <h1 className="text-5xl font-bold text-orange-500 mb-4">404</h1>
-                        <p className="text-xl text-gray-200 mb-2">Page non trouvée</p>
-                        <p className="text-md text-gray-400 mb-8">
-                            La page que vous recherchez n'existe pas.
-                        </p>
-                        <Link 
-                            to="/" 
-                            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition-colors"
-                        >
-                            Retour à l'accueil
-                        </Link>
-                    </motion.div>
-                } />
-            </Routes>
-            <Toaster />
-        </div>
-    );
-};
 
 function App() {
     return (
@@ -102,14 +26,74 @@ function App() {
             <AuthProvider>
                 <Router>
                     <Helmet>
-                        <title>BENDZA - Crée. Publie. Encaisse.</title>
-                        <meta name="description" content="BENDZA: Crée. Publie. Encaisse. Plateforme de publication et monétisation de contenus exclusifs pour influenceurs." />
+                        <title>Bendza - Plateforme de contenu premium</title>
+                        <meta name="description" content="Découvrez et créez du contenu exclusif sur Bendza" />
                     </Helmet>
-                    <AppContent />
+                    
+                    <div className="min-h-screen bg-black text-white">
+                        <Routes>
+                            <Route path="/" element={<HomePage />} />
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            
+                            <Route path="/profile" element={
+                                <RequireAuth>
+                                    <Layout>
+                                        <Profile />
+                                    </Layout>
+                                </RequireAuth>
+                            } />
+                            
+                            <Route path="/dashboard" element={
+                                <RequireAuth>
+                                    <Layout>
+                                        <CreatorDashboard />
+                                    </Layout>
+                                </RequireAuth>
+                            } />
+                            
+                            <Route path="/become-creator" element={
+                                <RequireAuth>
+                                    <Layout>
+                                        <BecomeCreator />
+                                    </Layout>
+                                </RequireAuth>
+                            } />
+                            
+                            <Route path="/cashout" element={
+                                <RequireAuth>
+                                    <Layout>
+                                        <Cashout />
+                                    </Layout>
+                                </RequireAuth>
+                            } />
+                            
+                            {/* 404 route */}
+                            <Route path="*" element={
+                                <motion.div
+                                    initial={{ opacity: 0, y: -50 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="min-h-screen bg-black text-white flex items-center justify-center"
+                                >
+                                    <div className="text-center">
+                                        <h1 className="text-6xl font-bold text-orange-500 mb-4">404</h1>
+                                        <p className="text-xl text-gray-300 mb-8">Page non trouvée</p>
+                                        <Link
+                                            to="/"
+                                            className="inline-flex items-center px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                                        >
+                                            Retour à l'accueil
+                                        </Link>
+                                    </div>
+                                </motion.div>
+                            } />
+                        </Routes>
+                        <Toaster />
+                    </div>
                 </Router>
             </AuthProvider>
         </ErrorBoundary>
     )
 }
 
-export default App;
+export default App

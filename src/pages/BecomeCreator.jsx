@@ -14,7 +14,7 @@ function BecomeCreator() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { user, userProfile, loading, becomeCreator } = useAuth()
+  const { user, loading, becomeCreator } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
   const { recordPaymentTransaction } = usePaymentTransaction()
@@ -184,7 +184,7 @@ function BecomeCreator() {
   }
 
   // Si pas de profil utilisateur
-  if (!userProfile) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -199,7 +199,7 @@ function BecomeCreator() {
   }
 
   // Si déjà créateur
-  if (userProfile?.is_creator) {
+  if (user?.is_creator) {
     return (
       <motion.div
         initial={{ opacity: 0 }}

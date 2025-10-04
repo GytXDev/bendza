@@ -10,16 +10,68 @@ import { useToast } from '../components/ui/use-toast'
 import { imageUploadService } from '../lib/imageUpload'
 
 function Profile() {
-  const { userProfile, updateProfile, signOut, user } = useAuth()
+  const { user, updateProfile, signOut, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [justUploaded, setJustUploaded] = useState(false)
   const fileInputRef = useRef(null)
   const [formData, setFormData] = useState({
-    name: userProfile?.name || '',
-    email: userProfile?.email || '',
-    photourl: userProfile?.photourl || ''
+    name: user?.name || '',
+    email: user?.email || '',
+    photourl: user?.photourl || ''
   })
   const { toast } = useToast()
+  
+  // Debug logs
+  console.log('👤 Profile: user data:', user);
+  console.log('👤 Profile: authLoading:', authLoading);
+  console.log('👤 Profile: formData:', formData);
+  
+  // Loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-white text-xl">Chargement du profil...</div>
+        </div>
+      </div>
+    )
+  }
+  
+  // Si pas d'utilisateur connecté
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-white text-xl mb-4">Erreur de profil utilisateur</div>
+          <p className="text-gray-400 mb-4">Impossible de charger votre profil</p>
+          <Button onClick={() => window.location.reload()}>
+            Actualiser la page
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Mettre à jour formData quand user change
+  React.useEffect(() => {
+    if (user && !justUploaded) {
+      setFormData(prev => ({
+        name: user.name || '',
+        email: user.email || '',
+        photourl: user.photourl || ''
+      }));
+    }
+  }, [user, justUploaded]);
+
+  // Réinitialiser justUploaded quand l'AuthContext se met à jour avec la nouvelle photo
+  React.useEffect(() => {
+    if (justUploaded && user?.photourl && formData.photourl && user.photourl === formData.photourl) {
+      console.log('🔄 Profile: AuthContext updated with new photo, resetting justUploaded flag');
+      setJustUploaded(false);
+    }
+  }, [user?.photourl, formData.photourl, justUploaded]);
 
   const handleChange = (e) => {
     setFormData({
@@ -32,37 +84,47 @@ function Profile() {
     if (!file) return
 
     setUploadingImage(true)
+    setJustUploaded(false)
 
     try {
       // Upload de l'image
       const uploadResult = await imageUploadService.uploadProfileImage(
         file,
         user.id,
-        userProfile?.photourl
+        user?.photourl
       )
 
       // Mise à jour du profil avec la nouvelle URL d'image
+      console.log('🖼️ Profile: Updating profile with new photo URL:', uploadResult.url);
       const { error } = await updateProfile({
         photourl: uploadResult.url
       })
 
       if (error) {
+        console.error('❌ Profile: Error updating profile:', error);
         toast({
           title: "Erreur",
           description: "Impossible de mettre à jour la photo de profil",
           variant: "destructive"
         })
       } else {
+        console.log('✅ Profile: Profile updated successfully');
         // Mise à jour du state local
         setFormData(prev => ({
           ...prev,
           photourl: uploadResult.url
         }))
+        
+        // Marquer qu'on vient de faire un upload pour éviter que le useEffect écrase
+        setJustUploaded(true)
 
         toast({
           title: "Photo mise à jour",
           description: "Votre photo de profil a été mise à jour avec succès"
         })
+        
+        // Forcer un re-render pour afficher la nouvelle image
+        console.log('🖼️ Profile: New photo URL set:', uploadResult.url);
       }
     } catch (error) {
       console.error('Erreur upload image:', error)
@@ -154,8 +216,8 @@ function Profile() {
           <div className="text-center mb-8">
             <div className="relative inline-block group">
               <img
-                src={userProfile?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name}`}
-                alt={userProfile?.name}
+                src={formData.photourl || user?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`}
+                alt={user?.name}
                 className={`w-24 h-24 rounded-full object-cover mx-auto mb-4 transition-opacity ${uploadingImage ? 'opacity-50' : 'opacity-100'
                   }`}
               />
