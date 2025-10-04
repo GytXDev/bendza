@@ -151,7 +151,7 @@ function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 bg-gray-900 border-gray-700 text-white placeholder-gray-400"
-                placeholder="votre@email.com"
+                placeholder="Email"
               />
             </div>
 
@@ -168,7 +168,7 @@ function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 bg-gray-900 border-gray-700 text-white placeholder-gray-400"
-                placeholder="••••••••"
+                placeholder="Mot de passe"
               />
             </div>
           </div>

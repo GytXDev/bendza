@@ -4,6 +4,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Effet flou pour contenu non payé */
+.content-blur {
+  filter: blur(12px);
+  transition: filter 0.3s ease;
+}
+
+.content-blur:hover {
+  filter: blur(8px);
+}
+
 :root {
   --bendza-orange: #FF5A00;
   --bendza-black: #000000;

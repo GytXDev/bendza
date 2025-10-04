@@ -97,7 +97,7 @@ function ResendConfirmationEmail() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="votre@email.com"
+            placeholder="Email"
             className="bg-gray-800 border-gray-700 text-white"
             required
           />

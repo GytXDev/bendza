@@ -5,6 +5,8 @@ export const STORAGE_BUCKETS = {
   AVATARS: 'avatars',
   CONTENT: 'content',
   THUMBNAILS: 'thumbnails',
+  BANNERS: 'banners',
+  DOCUMENTS: 'documents',
   TEMP: 'temp'
 }
 
@@ -158,6 +160,77 @@ export const uploadThumbnail = async (file, creatorId, contentId) => {
     return { publicUrl, filePath }
   } catch (error) {
     console.error('Erreur upload thumbnail:', error)
+    throw error
+  }
+}
+
+/**
+ * Upload d'une bannière de créateur
+ */
+export const uploadBanner = async (file, creatorId) => {
+  try {
+    // Vérifications
+    if (!isFileTypeAllowed(file, ALLOWED_FILE_TYPES.IMAGE)) {
+      throw new Error('Type de fichier non autorisé. Utilisez JPEG, PNG, WebP ou GIF.')
+    }
+
+    if (!isFileSizeValid(file, 10 * 1024 * 1024)) { // 10MB max pour bannière
+      throw new Error('Fichier trop volumineux. Taille maximale : 10MB.')
+    }
+
+    const fileName = generateFileName(file, `banner_${creatorId}_`)
+    const filePath = `${creatorId}/${fileName}`
+
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKETS.BANNERS)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true
+      })
+
+    if (error) throw error
+
+    // Récupérer l'URL publique
+    const { data: { publicUrl } } = supabase.storage
+      .from(STORAGE_BUCKETS.BANNERS)
+      .getPublicUrl(filePath)
+
+    return { publicUrl, filePath }
+  } catch (error) {
+    console.error('Erreur upload banner:', error)
+    throw error
+  }
+}
+
+/**
+ * Upload d'un document (justificatif, contrat)
+ */
+export const uploadDocument = async (file, userId, documentType = 'document') => {
+  try {
+    // Vérifications
+    if (!isFileTypeAllowed(file, ['application/pdf', 'image/jpeg', 'image/png'])) {
+      throw new Error('Type de fichier non autorisé. Utilisez PDF, JPEG ou PNG.')
+    }
+
+    if (!isFileSizeValid(file, 20 * 1024 * 1024)) { // 20MB max pour documents
+      throw new Error('Fichier trop volumineux. Taille maximale : 20MB.')
+    }
+
+    const fileName = generateFileName(file, `${documentType}_${userId}_`)
+    const filePath = `${userId}/${documentType}/${fileName}`
+
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKETS.DOCUMENTS)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) throw error
+
+    return { filePath, fileName }
+  } catch (error) {
+    console.error('Erreur upload document:', error)
     throw error
   }
 }

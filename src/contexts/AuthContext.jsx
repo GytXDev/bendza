@@ -17,68 +17,116 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [userProfile, setUserProfile] = useState(null)
 
+  // Fonction simple pour récupérer le profil utilisateur
   const fetchUserProfile = async (userId) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select(`
-          id, 
-          email, 
-          name, 
-          photourl, 
-          is_creator, 
-          creator_bio,
-          creator_description,
-          banner_url,
-          account_type,
-          subscription_price,
-          creator_verified,
-          creator_since,
-          created_at
-        `)
+        .select('id, email, name, photourl, is_creator, created_at, updated_at')
         .eq('id', userId)
         .single()
 
       if (error) {
-        console.error('Error fetching user profile:', error)
+        if (error.code === 'PGRST116') {
+          // Utilisateur n'existe pas, le créer
+          const createdUser = await createUserFromAuth(userId)
+          if (createdUser) {
+            setUserProfile(createdUser)
+          }
+          return createdUser
+        }
         setUserProfile(null)
-      } else {
-        setUserProfile(data)
+        return null
       }
+      
+      setUserProfile(data)
+      return data
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error)
+      console.error('Error fetching user profile:', error)
       setUserProfile(null)
+      return null
+    }
+  }
+
+  // Fonction simple pour créer un utilisateur
+  const createUserFromAuth = async (userId) => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      
+      if (!authUser) return null
+
+      const userData = {
+        id: userId,
+        email: authUser.email,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Utilisateur',
+        photourl: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null,
+        is_creator: false
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert([userData])
+        .select()
+        .single()
+
+      if (error) {
+        if (error.code === '23505') {
+          // Utilisateur existe déjà, le récupérer
+          const { data: existingUser, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single()
+          
+          if (!fetchError && existingUser) {
+            return existingUser
+          }
+        }
+        console.error('Error creating user:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error in createUserFromAuth:', error)
+      return null
     }
   }
 
   useEffect(() => {
-    // Get initial session
-    const getSession = async () => {
+    // Récupération initiale de la session
+    const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
         if (session?.user) {
+          setUser(session.user)
           await fetchUserProfile(session.user.id)
+        } else {
+          setUser(null)
+          setUserProfile(null)
         }
       } catch (error) {
         console.error('Error getting initial session:', error)
+        setUser(null)
+        setUserProfile(null)
       } finally {
         setLoading(false)
       }
     }
 
-    getSession()
+    getInitialSession()
 
-    // Listen for auth changes
+    // Écouter les changements d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
+        if (event === 'SIGNED_IN' && session?.user) {
+          setUser(session.user)
           await fetchUserProfile(session.user.id)
-        } else {
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
           setUserProfile(null)
         }
-        setLoading(false)
       }
     )
 
@@ -124,7 +172,7 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}`
+          redirectTo: `${window.location.origin}/`
         }
       })
 
@@ -161,47 +209,18 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
-      // Mapper les noms de champs du frontend vers la base de données
-      const mappedUpdates = {}
-
-      if (updates.bannerUrl !== undefined) {
-        mappedUpdates.banner_url = updates.bannerUrl
-      }
-      if (updates.photourl !== undefined) {
-        mappedUpdates.photourl = updates.photourl
-      }
-      if (updates.name !== undefined) {
-        mappedUpdates.name = updates.name
-      }
-      if (updates.creatorBio !== undefined) {
-        mappedUpdates.creator_bio = updates.creatorBio
-      }
-      if (updates.creatorDescription !== undefined) {
-        mappedUpdates.creator_description = updates.creatorDescription
-      }
-      if (updates.accountType !== undefined) {
-        mappedUpdates.account_type = updates.accountType
-      }
-      if (updates.subscriptionPrice !== undefined) {
-        mappedUpdates.subscription_price = updates.subscriptionPrice
-      }
-
-      console.log('Mise à jour du profil avec:', mappedUpdates)
-
       const { error } = await supabase
         .from('users')
-        .update(mappedUpdates)
+        .update(updates)
         .eq('id', user.id)
 
-      if (error) {
-        console.error('Erreur lors de la mise à jour du profil:', error)
-        throw error
-      }
+      if (error) throw error
 
-      await fetchUserProfile(user.id)
+      // Recharger le profil
+      const profile = await fetchUserProfile(user.id)
+      setUserProfile(profile)
       return { error: null }
     } catch (error) {
-      console.error('Erreur dans updateProfile:', error)
       return { error }
     }
   }

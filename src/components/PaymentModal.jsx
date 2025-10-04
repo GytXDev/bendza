@@ -14,9 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   processAirtelMoneyPayment,
-  generatePaymentReference,
-  validateMobileNumber,
-  getPaymentDescription
+  validateMobileNumber
 } from '@/lib/payment';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -42,19 +40,10 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
     setLoading(true);
 
     try {
-      // Génération de la référence unique
-      const reference = generatePaymentReference(type, user?.id || 'anonymous');
-
-      // Description du paiement
-      const description = getPaymentDescription(type, { creatorName, contentTitle });
-
-      // Appel à l'API Airtel Money
+      // Appel à l'API Airtel Money (seulement amount et mobileNumber)
       const paymentResult = await processAirtelMoneyPayment({
         amount,
         mobileNumber: mobileNumber.replace(/\s/g, ''),
-        type,
-        reference,
-        description,
       });
 
       if (paymentResult.success) {
@@ -67,16 +56,12 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
         onSuccess({
           mobileNumber,
           amount,
-          transactionId: paymentResult.transactionId,
-          reference,
-          type,
         });
       } else {
         throw new Error(paymentResult.error);
       }
 
     } catch (error) {
-      console.error('Erreur lors du paiement:', error);
       toast({
         title: "Erreur de paiement",
         description: error.message || "Le paiement n'a pas pu être traité. Veuillez réessayer.",
@@ -129,7 +114,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
                   className="pl-10"
-                  placeholder="Ex: 077001200"
+                  placeholder="Numéro de téléphone"
                   required
                   disabled={loading}
                 />

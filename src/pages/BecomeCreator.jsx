@@ -28,42 +28,32 @@ function BecomeCreator() {
     setShowPaymentModal(false)
 
     try {
-      console.log('💳 Traitement du paiement réussi:', paymentData)
-
       // Enregistrer la transaction dans la base de données
-      console.log('📝 Enregistrement de la transaction...')
-      await recordPaymentTransaction({
-        ...paymentData,
-        description: 'Activation du profil créateur BENDZA',
-      });
-      console.log('✅ Transaction enregistrée avec succès')
+      await recordPaymentTransaction(paymentData.amount, paymentData.mobileNumber);
 
       // Activer le profil créateur
-      console.log('👑 Activation du profil créateur...')
       const { error } = await becomeCreator()
 
       if (error) {
-        console.error('❌ Erreur lors de l\'activation:', error)
         toast({
           title: "Paiement réussi mais erreur d'activation",
           description: "Votre paiement a été traité mais nous n'avons pas pu activer votre profil créateur. Notre équipe va vous contacter dans les plus brefs délais.",
           variant: "destructive"
         })
       } else {
-        console.log('✅ Profil créateur activé avec succès')
+        console.log('Profil créateur activé avec succès')
         setShowSuccess(true)
 
         // Attendre un peu avant de rediriger pour montrer l'animation
         setTimeout(() => {
           toast({
-            title: "🎉 Félicitations !",
+            title: "Félicitations !",
             description: "Votre profil créateur a été activé avec succès !"
           })
           navigate('/dashboard')
         }, 2000)
       }
     } catch (error) {
-      console.error('❌ Erreur lors de l\'activation du créateur:', error);
       toast({
         title: "Erreur technique",
         description: "Votre paiement a été traité mais une erreur technique s'est produite. Notre équipe va vous contacter dans les plus brefs délais.",
@@ -152,7 +142,7 @@ function BecomeCreator() {
             transition={{ delay: 0.3 }}
             className="text-3xl font-bold text-white mb-4"
           >
-            🎉 Félicitations !
+            Félicitations !
           </motion.h1>
 
           <motion.p

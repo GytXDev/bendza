@@ -6,7 +6,7 @@ import { supabase } from './supabase'
  */
 export class ImageUploadService {
     constructor() {
-        this.bucketName = 'profile-images'
+        this.bucketName = 'avatars'
         this.maxFileSize = 5 * 1024 * 1024 // 5MB
         this.allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
         this.quality = 0.8 // Qualité de compression
@@ -104,12 +104,14 @@ export class ImageUploadService {
             if (fileName && fileName !== 'default-avatar.png') {
                 // Détecter le bucket à partir de l'URL
                 let bucketName = this.bucketName // fallback
-                if (imageUrl.includes('/profile-banners/')) {
-                    bucketName = 'profile-banners'
-                } else if (imageUrl.includes('/profile-images/')) {
-                    bucketName = 'profile-images'
-                } else if (imageUrl.includes('/creator-content/')) {
-                    bucketName = 'creator-content'
+                if (imageUrl.includes('/banners/')) {
+                    bucketName = 'banners'
+                } else if (imageUrl.includes('/avatars/')) {
+                    bucketName = 'avatars'
+                } else if (imageUrl.includes('/content/')) {
+                    bucketName = 'content'
+                } else if (imageUrl.includes('/thumbnails/')) {
+                    bucketName = 'thumbnails'
                 }
 
                 const { error } = await supabase.storage
@@ -131,14 +133,14 @@ export class ImageUploadService {
      * Upload une image de profil
      */
     async uploadProfileImage(file, userId, currentImageUrl = null) {
-        return this.uploadImage(file, userId, 'profile-images', currentImageUrl)
+        return this.uploadImage(file, userId, 'avatars', currentImageUrl)
     }
 
     /**
      * Upload une bannière de profil
      */
     async uploadBannerImage(file, userId, currentImageUrl = null) {
-        return this.uploadImage(file, userId, 'profile-banners', currentImageUrl)
+        return this.uploadImage(file, userId, 'banners', currentImageUrl)
     }
 
     /**
@@ -150,9 +152,9 @@ export class ImageUploadService {
             this.validateFile(file)
 
             // Compression
-            console.log('🔄 Compression de l\'image...')
+            console.log('Compression de l\'image...')
             const compressedFile = await this.compressImage(file)
-            console.log('✅ Image compressée:', {
+            console.log('Image compressée:', {
                 original: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
                 compressed: `${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`
             })
@@ -180,11 +182,11 @@ export class ImageUploadService {
                 .getPublicUrl(fileName)
 
             const publicUrl = urlData.publicUrl
-            console.log('✅ Upload réussi:', publicUrl)
+            console.log('Upload réussi:', publicUrl)
 
             // Supprimer l'ancienne image (en arrière-plan)
             if (currentImageUrl) {
-                console.log('🗑️ Suppression de l\'ancienne image...')
+                console.log('Suppression de l\'ancienne image...')
                 this.deleteOldImage(currentImageUrl).catch(console.warn)
             }
 
@@ -196,7 +198,7 @@ export class ImageUploadService {
             }
 
         } catch (error) {
-            console.error('❌ Erreur lors de l\'upload:', error)
+            console.error('Erreur lors de l\'upload:', error)
             throw error
         }
     }
@@ -218,11 +220,11 @@ export class ImageUploadService {
                 throw new Error(`Erreur de suppression: ${error.message}`)
             }
 
-            console.log('✅ Image supprimée:', fileName)
+            console.log('Image supprimée:', fileName)
             return true
 
         } catch (error) {
-            console.error('❌ Erreur lors de la suppression:', error)
+            console.error('Erreur lors de la suppression:', error)
             throw error
         }
     }

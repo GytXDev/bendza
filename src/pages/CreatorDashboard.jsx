@@ -1,50 +1,355 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { Button } from '../components/ui/button';
+import { useToast } from '../components/ui/use-toast';
+import { 
+    Plus, 
+    Eye, 
+    DollarSign, 
+    TrendingUp, 
+    Calendar,
+    Edit,
+    Trash2,
+    Image,
+    Play,
+    FileText
+} from 'lucide-react';
+import CreateContentModal from '../components/CreateContentModal';
 
 function CreatorDashboard() {
+    const { user, userProfile } = useAuth();
+    const { toast } = useToast();
+    const [content, setContent] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [stats, setStats] = useState({
+        totalContent: 0,
+        totalViews: 0,
+        totalEarnings: 0,
+        thisMonthEarnings: 0
+    });
+
+    useEffect(() => {
+        fetchContent();
+        fetchStats();
+    }, [user]);
+
+    const fetchContent = async () => {
+        if (!user) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('content')
+                .select('*')
+                .eq('creator_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setContent(data || []);
+        } catch (error) {
+            console.error('Erreur lors du chargement du contenu:', error);
+            toast({
+                title: "Erreur",
+                description: "Impossible de charger votre contenu",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchStats = async () => {
+        if (!user) return;
+
+        try {
+            // Statistiques du contenu
+            const { data: contentData, error: contentError } = await supabase
+                .from('content')
+                .select('views_count, price')
+                .eq('creator_id', user.id);
+
+            if (contentError) throw contentError;
+
+            // Statistiques des transactions
+            const { data: transactionsData, error: transactionsError } = await supabase
+                .from('transactions')
+                .select('amount, created_at')
+                .eq('creator_id', user.id)
+                .eq('status', 'paid');
+
+            if (transactionsError) throw transactionsError;
+
+            const totalContent = contentData?.length || 0;
+            const totalViews = contentData?.reduce((sum, item) => sum + (item.views_count || 0), 0) || 0;
+            const totalEarnings = transactionsData?.reduce((sum, item) => sum + item.amount, 0) || 0;
+
+            // Revenus de ce mois
+            const thisMonth = new Date();
+            thisMonth.setDate(1);
+            const thisMonthEarnings = transactionsData
+                ?.filter(item => new Date(item.created_at) >= thisMonth)
+                ?.reduce((sum, item) => sum + item.amount, 0) || 0;
+
+            setStats({
+                totalContent,
+                totalViews,
+                totalEarnings,
+                thisMonthEarnings
+            });
+        } catch (error) {
+            console.error('Erreur lors du chargement des statistiques:', error);
+        }
+    };
+
+    const handleDeleteContent = async (contentId) => {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer ce contenu ?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('content')
+                .delete()
+                .eq('id', contentId);
+
+            if (error) throw error;
+
+            setContent(prev => prev.filter(item => item.id !== contentId));
+            toast({
+                title: "Contenu supprimé",
+                description: "Le contenu a été supprimé avec succès",
+            });
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            toast({
+                title: "Erreur",
+                description: "Impossible de supprimer le contenu",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const formatPrice = (price) => {
+        return `${price} FCFA`;
+    };
+
+    const formatDate = (date) => {
+        return new Date(date).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const getContentIcon = (type) => {
+        switch (type) {
+            case 'video': return Play;
+            case 'image': return Image;
+            default: return FileText;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <div className="text-white text-xl">Chargement du dashboard...</div>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className='text-center space-y-8'
-        >
+        <div className="min-h-screen bg-black text-white">
             <Helmet>
-                <title>Tableau de Bord Créateur - BENDZA</title>
-                <meta name="description" content="Tableau de bord créateur BENDZA. Gérez votre contenu, vos revenus et vos abonnés." />
+                <title>Dashboard Créateur - BENDZA</title>
+                <meta name="description" content="Dashboard créateur BENDZA. Gérez votre contenu et vos revenus." />
             </Helmet>
-            <h1 className='text-5xl md:text-7xl font-bold text-orange-500'>
-                Tableau de Bord Créateur
-            </h1>
 
-            <motion.p
-                className='text-xl md:text-2xl text-beige-200 max-w-2xl mx-auto'
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-            >
-                Bienvenue, cher créateur !
-            </motion.p>
+            <div className="max-w-6xl mx-auto px-4 py-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white mb-2">Dashboard Créateur</h1>
+                        <p className="text-gray-400">Gérez votre contenu et vos revenus</p>
+                    </div>
+                    <Button
+                        onClick={() => setShowCreateModal(true)}
+                        className="bg-orange-500 hover:bg-orange-600"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Créer du contenu
+                    </Button>
+                </div>
 
-            <motion.p
-                className='text-md text-gray-400 max-w-lg mx-auto'
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-            >
-                Gérez votre univers de contenu ici.
-            </motion.p>
-            <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow-lg hover:bg-orange-600 transition-all duration-300"
-                onClick={() => alert("🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀")}
-            >
-                Voir mes statistiques
-            </motion.button>
-        </motion.div>
+                {/* Statistiques */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-400 text-sm">Contenus publiés</p>
+                                <p className="text-2xl font-bold text-white">{stats.totalContent}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-orange-500" />
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                        className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-400 text-sm">Vues totales</p>
+                                <p className="text-2xl font-bold text-white">{stats.totalViews}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                <Eye className="w-6 h-6 text-blue-500" />
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                        className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-400 text-sm">Revenus totaux</p>
+                                <p className="text-2xl font-bold text-white">{formatPrice(stats.totalEarnings)}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                <DollarSign className="w-6 h-6 text-green-500" />
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.3 }}
+                        className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-400 text-sm">Ce mois</p>
+                                <p className="text-2xl font-bold text-white">{formatPrice(stats.thisMonthEarnings)}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                                <TrendingUp className="w-6 h-6 text-purple-500" />
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* Liste du contenu */}
+                <div className="bg-gray-900 rounded-xl border border-gray-800">
+                    <div className="p-6 border-b border-gray-800">
+                        <h2 className="text-xl font-semibold text-white">Mes contenus</h2>
+                        <p className="text-gray-400 text-sm">Gérez vos publications</p>
+                    </div>
+
+                    {content.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Plus className="w-12 h-12 text-gray-400" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-white mb-3">
+                                Aucun contenu publié
+                            </h3>
+                            <p className="text-gray-400 mb-6">
+                                Commencez par créer votre premier contenu pour générer des revenus
+                            </p>
+                            <Button
+                                onClick={() => setShowCreateModal(true)}
+                                className="bg-orange-500 hover:bg-orange-600"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Créer du contenu
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-800">
+                            {content.map((item, index) => {
+                                const Icon = getContentIcon(item.type);
+                                return (
+                                    <motion.div
+                                        key={item.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                                        className="p-6 hover:bg-gray-800/50 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                                                    <Icon className="w-6 h-6 text-orange-500" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold text-white mb-1">{item.title}</h3>
+                                                    <div className="flex items-center space-x-4 text-sm text-gray-400">
+                                                        <span className="flex items-center">
+                                                            <Calendar className="w-4 h-4 mr-1" />
+                                                            {formatDate(item.created_at)}
+                                                        </span>
+                                                        <span className="flex items-center">
+                                                            <Eye className="w-4 h-4 mr-1" />
+                                                            {item.views_count || 0} vues
+                                                        </span>
+                                                        <span className="text-orange-500 font-semibold">
+                                                            {formatPrice(item.price)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="border-gray-600 text-gray-300 hover:border-orange-500 hover:text-orange-500"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleDeleteContent(item.id)}
+                                                    className="border-gray-600 text-gray-300 hover:border-red-500 hover:text-red-500"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Modal de création de contenu */}
+            <CreateContentModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onContentCreated={fetchContent}
+            />
+        </div>
     );
 }
 

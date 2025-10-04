@@ -6,9 +6,6 @@ const AIRTEL_MONEY_API_URL = import.meta.env.VITE_AIRTEL_MONEY_API_URL;
  * @param {Object} paymentData - Données du paiement
  * @param {number} paymentData.amount - Montant en FCFA
  * @param {string} paymentData.mobileNumber - Numéro de téléphone
- * @param {string} paymentData.type - Type de paiement (creator_activation, subscription, content_purchase)
- * @param {string} paymentData.reference - Référence unique du paiement
- * @param {string} paymentData.description - Description du paiement
  * @returns {Promise<Object>} - Résultat du paiement
  */
 export const processAirtelMoneyPayment = async (paymentData) => {
@@ -17,8 +14,6 @@ export const processAirtelMoneyPayment = async (paymentData) => {
             throw new Error('URL de l\'API Airtel Money non configurée');
         }
 
-        console.log('Envoi du paiement à:', AIRTEL_MONEY_API_URL);
-        console.log('Données du paiement:', paymentData);
 
         // Paiement réel via API AirtelMoney
         const response = await fetch(AIRTEL_MONEY_API_URL, {
@@ -28,7 +23,6 @@ export const processAirtelMoneyPayment = async (paymentData) => {
         });
 
         const responseText = await response.text();
-        console.log('Réponse de l\'API:', responseText);
 
         // Vérifier si la réponse contient "successfully processed" ou un JSON avec status_message
         let isSuccess = false;
@@ -55,13 +49,9 @@ export const processAirtelMoneyPayment = async (paymentData) => {
             data: {
                 amount: paymentData.amount,
                 numero: paymentData.mobileNumber,
-                reference: paymentData.reference,
-                description: paymentData.description,
-                type: paymentData.type,
             },
         };
     } catch (error) {
-        console.error('Erreur lors du paiement Airtel Money:', error);
         return {
             success: false,
             error: error.message || 'Erreur lors du traitement du paiement',

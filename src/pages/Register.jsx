@@ -143,7 +143,7 @@ function Register() {
                 value={formData.name}
                 onChange={handleChange}
                 className="mt-1 bg-gray-900 border-gray-700 text-white placeholder-gray-400"
-                placeholder="Votre nom complet"
+                placeholder="Nom complet"
               />
             </div>
 
@@ -160,7 +160,7 @@ function Register() {
                 value={formData.email}
                 onChange={handleChange}
                 className="mt-1 bg-gray-900 border-gray-700 text-white placeholder-gray-400"
-                placeholder="votre@email.com"
+                placeholder="Email"
               />
             </div>
 
@@ -177,7 +177,7 @@ function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 className="mt-1 bg-gray-900 border-gray-700 text-white placeholder-gray-400"
-                placeholder="••••••••"
+                placeholder="Mot de passe"
               />
             </div>
 
@@ -194,7 +194,7 @@ function Register() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className="mt-1 bg-gray-900 border-gray-700 text-white placeholder-gray-400"
-                placeholder="••••••••"
+                placeholder="Mot de passe"
               />
             </div>
           </div>
