@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
 
   const menuItems = [
     { icon: Home, label: 'Accueil', path: '/' },
@@ -25,7 +25,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   if (user) {
     menuItems.push({ icon: User, label: 'Profil', path: '/profile' });
     
-    if (userProfile?.is_creator) {
+    if (user?.is_creator) {
       menuItems.push({ icon: BarChart3, label: 'Tableau de bord', path: '/dashboard' });
       menuItems.push({ icon: Wallet, label: 'Cashout', path: '/cashout' });
     } else {
@@ -79,12 +79,12 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="mt-8 pt-6 border-t border-gray-800">
             <div className="flex items-center space-x-3">
               <img
-                src={userProfile?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name || user?.email}`}
-                alt={userProfile?.name || user?.email}
+                src={user?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || user?.email}`}
+                alt={user?.name || user?.email}
                 className="w-10 h-10 rounded-full"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{userProfile?.name || user?.email}</p>
+                <p className="text-sm font-medium text-white truncate">{user?.name || user?.email}</p>
                 <p className="text-xs text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>

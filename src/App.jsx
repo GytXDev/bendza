@@ -32,7 +32,11 @@ function App() {
                     
                     <div className="min-h-screen bg-black text-white">
                         <Routes>
-                            <Route path="/" element={<HomePage />} />
+                            <Route path="/" element={
+                                <Layout>
+                                    <HomePage />
+                                </Layout>
+                            } />
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
                             

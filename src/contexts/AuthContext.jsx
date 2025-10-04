@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
       // D'abord, vérifier si l'utilisateur existe déjà
       const { data: existingUser, error: selectError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, name, photourl')
         .eq('id', user.id)
         .maybeSingle();
       
@@ -38,37 +38,26 @@ export const AuthProvider = ({ children }) => {
         throw selectError;
       }
       
-      const userData = {
-        id: user.id,
-        name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Utilisateur',
-        email: user.email,
-        photourl: user.user_metadata?.avatar_url || null
-      };
-      
       if (existingUser) {
-        // L'utilisateur existe, le mettre à jour
-        console.log('🔄 AuthContext: Updating existing user');
+        // L'utilisateur existe, ne pas l'écraser - garder les données existantes
+        console.log('✅ AuthContext: User already exists, keeping existing data:', existingUser);
+        return;
+      } else {
+        // L'utilisateur n'existe pas, l'insérer avec les données de Supabase Auth
+        console.log('➕ AuthContext: Inserting new user');
+        const userData = {
+          id: user.id,
+          name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Utilisateur',
+          email: user.email,
+          photourl: user.user_metadata?.avatar_url || null
+        };
+        
         const { data, error } = await supabase
           .from('users')
-          .update(userData)
-          .eq('id', user.id)
+          .insert([userData])
           .select();
         
         if (error) {
-          console.error('❌ AuthContext: Error updating user:', error);
-          throw error;
-        }
-        
-        console.log('✅ AuthContext: User updated successfully:', data);
-      } else {
-        // L'utilisateur n'existe pas, l'insérer
-        console.log('➕ AuthContext: Inserting new user');
-      const { data, error } = await supabase
-        .from('users')
-          .insert([userData])
-          .select();
-
-      if (error) {
           console.error('❌ AuthContext: Error inserting user:', error);
           throw error;
         }
@@ -126,9 +115,11 @@ export const AuthProvider = ({ children }) => {
       // Utiliser la photo de la base de données si elle existe, sinon celle de Supabase Auth
       const finalPhotourl = profile?.photourl || authUser.user_metadata?.avatar_url || null;
       console.log('🖼️ AuthContext: Final photo URL selected:', finalPhotourl);
+      console.log('🖼️ AuthContext: Photo from DB:', profile?.photourl);
+      console.log('🖼️ AuthContext: Photo from Auth:', authUser.user_metadata?.avatar_url);
       
-      // Vérifier si on vient de faire une mise à jour récente (dans les 5 dernières secondes)
-      const recentUpdate = Date.now() - lastProfileUpdate.current < 5000;
+      // Vérifier si on vient de faire une mise à jour récente (dans les 10 dernières secondes)
+      const recentUpdate = Date.now() - lastProfileUpdate.current < 10000;
       console.log('⏰ AuthContext: Recent profile update?', recentUpdate, 'Time since last update:', Date.now() - lastProfileUpdate.current);
       
       // Si on vient de faire une mise à jour récente, ne pas écraser les données
@@ -141,7 +132,8 @@ export const AuthProvider = ({ children }) => {
       const userData = {
         id: authUser.id,
         email: authUser.email,
-        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Utilisateur',
+        // Toujours utiliser les données de la base de données si elles existent, sinon fallback sur Supabase Auth
+        name: profile?.name || authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Utilisateur',
         photourl: finalPhotourl,
         is_creator: profile?.is_creator || false,
         profile: profile
