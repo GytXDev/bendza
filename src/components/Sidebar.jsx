@@ -17,6 +17,10 @@ import { useAuth } from '../contexts/AuthContext';
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { user } = useAuth();
+  
+  // Debug log pour vérifier le rôle
+  console.log('🔍 Sidebar: User data:', user);
+  console.log('👑 Sidebar: User role:', user?.role);
 
   const menuItems = [
     { icon: Home, label: 'Accueil', path: '/' },
@@ -26,13 +30,20 @@ const Sidebar = ({ isOpen, onClose }) => {
         if (user) {
           menuItems.push({ icon: User, label: 'Profil', path: '/profile' });
           
+          // Admin peut avoir accès à la modération
           if (user?.role === 'admin') {
             menuItems.push({ icon: Shield, label: 'Modération', path: '/moderation' });
-          } else if (user?.is_creator) {
+          }
+          
+          // Créateur (admin ou non) a accès aux outils créateur
+          if (user?.is_creator) {
             menuItems.push({ icon: BarChart3, label: 'Tableau de bord', path: '/dashboard' });
             menuItems.push({ icon: Wallet, label: 'Cashout', path: '/cashout' });
           } else {
-            menuItems.push({ icon: Star, label: 'Devenir créateur', path: '/become-creator' });
+            // Seulement si pas créateur ET pas admin
+            if (user?.role !== 'admin') {
+              menuItems.push({ icon: Star, label: 'Devenir créateur', path: '/become-creator' });
+            }
           }
         } else {
     // Si l'utilisateur n'est pas connecté

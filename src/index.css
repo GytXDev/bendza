@@ -4,6 +4,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Styles personnalisés pour react-phone-number-input */
+.phone-input-custom {
+  --PhoneInput-color--focus: #f97316;
+  --PhoneInputCountrySelect-marginRight: 0.5rem;
+}
+
+.phone-input-custom .PhoneInputInput {
+  background-color: #1f2937;
+  border: 1px solid #4b5563;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  width: 100%;
+}
+
+.phone-input-custom .PhoneInputInput:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 1px #f97316;
+}
+
+.phone-input-custom .PhoneInputCountrySelect {
+  background-color: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 0.5rem 0 0 0.5rem;
+  color: white;
+  padding: 0.75rem;
+}
+
+.phone-input-custom .PhoneInputCountrySelect:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.phone-input-custom .PhoneInputCountrySelectArrow {
+  border-top-color: white;
+}
+
 /* Effet flou pour contenu non payé */
 .content-blur {
   filter: blur(12px);

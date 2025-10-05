@@ -21,21 +21,28 @@ class FusionPayService {
   }
 
   /**
-   * Initialise un paiement pour l'activation de compte créateur
+   * Initialise un paiement pour l'activation de compte créateur ou l'achat de contenu
    */
   async initiateCreatorPayment(paymentData) {
     try {
-      console.log('🚀 FusionPay: Initiating creator payment:', paymentData);
+      console.log('🚀 FusionPay: Initiating payment:', paymentData);
+
+      // Déterminer le type d'article selon le type de paiement
+      let articleName = "Activation compte créateur";
+      if (paymentData.type === 'content_purchase') {
+        articleName = paymentData.contentTitle || "Contenu exclusif";
+      }
 
       // Configuration du paiement
       this.fusionPay
         .totalPrice(paymentData.amount)
-        .addArticle("Activation compte créateur", paymentData.amount)
+        .addArticle(articleName, paymentData.amount)
         .addInfo({
           userId: paymentData.userId,
           userEmail: paymentData.userEmail,
           userName: paymentData.userName,
-          type: paymentData.type
+          type: paymentData.type,
+          contentId: paymentData.contentId || null
         })
         .clientName(paymentData.userName)
         .clientNumber(paymentData.userPhone || "00000000") // Numéro par défaut si non fourni
@@ -46,6 +53,17 @@ class FusionPayService {
       const response = await this.fusionPay.makePayment();
       
       console.log('✅ FusionPay: Payment initiated successfully:', response);
+      console.log('🔍 FusionPay: Response structure:', {
+        url: response?.url,
+        token: response?.token,
+        message: response?.message,
+        fullResponse: response
+      });
+      
+      // Vérifier que l'URL existe
+      if (!response?.url) {
+        throw new Error('URL de paiement manquante dans la réponse FusionPay');
+      }
       
       return {
         success: true,

@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, name, photourl, is_creator, created_at, updated_at')
+        .select('id, email, name, photourl, is_creator, role, created_at, updated_at')
         .eq('id', userId)
         .maybeSingle();
 
@@ -109,8 +109,9 @@ export const AuthProvider = ({ children }) => {
         
         console.log('📊 AuthContext: Fetching user profile...');
         const profile = await fetchUserProfile(authUser.id);
-        console.log('📊 AuthContext: Profile fetched:', profile);
-        console.log('🖼️ AuthContext: Photo sources - DB:', profile?.photourl, 'Auth:', authUser.user_metadata?.avatar_url);
+      console.log('📊 AuthContext: Profile fetched:', profile);
+      console.log('🖼️ AuthContext: Photo sources - DB:', profile?.photourl, 'Auth:', authUser.user_metadata?.avatar_url);
+      console.log('👑 AuthContext: User role:', profile?.role);
         
       // Utiliser la photo de la base de données si elle existe, sinon celle de Supabase Auth
       const finalPhotourl = profile?.photourl || authUser.user_metadata?.avatar_url || null;
@@ -136,6 +137,7 @@ export const AuthProvider = ({ children }) => {
         name: profile?.name || authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Utilisateur',
         photourl: finalPhotourl,
         is_creator: profile?.is_creator || false,
+        role: profile?.role || null,
         profile: profile
       };
         

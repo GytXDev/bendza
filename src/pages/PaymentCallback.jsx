@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/use-toast';
 import { fusionPayService } from '../lib/fusionpay';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const PaymentCallback = () => {
   const [searchParams] = useSearchParams();
@@ -17,6 +18,74 @@ const PaymentCallback = () => {
   const [paymentStatus, setPaymentStatus] = useState('checking'); // 'checking', 'success', 'pending', 'failed', 'error'
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Fonction pour traiter l'achat de contenu
+  const processContentPurchase = async (customData, paymentData) => {
+    try {
+      console.log('🔄 Processing content purchase:', customData);
+
+      const contentId = customData.contentId;
+      const userId = customData.userId;
+      const amount = paymentData.amount || 0;
+
+      if (!contentId || !userId) {
+        throw new Error('Données de paiement incomplètes');
+      }
+
+      // Récupérer les informations du contenu
+      const { data: contentItem, error: contentError } = await supabase
+        .from('content')
+        .select('id, creator_id, title, price')
+        .eq('id', contentId)
+        .single();
+
+      if (contentError || !contentItem) {
+        throw new Error('Contenu non trouvé');
+      }
+
+      // Créer une transaction
+      const { data: transaction, error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: userId,
+          content_id: contentId,
+          creator_id: contentItem.creator_id,
+          amount: amount,
+          type: 'achat_unitaire',
+          payment_method: 'fusionpay',
+          status: 'paid',
+          external_transaction_id: paymentData.transaction_id || null
+        })
+        .select()
+        .single();
+
+      if (transactionError) {
+        console.error('❌ Transaction creation failed:', transactionError);
+        throw transactionError;
+      }
+
+      // Créer l'achat
+      const { error: purchaseError } = await supabase
+        .from('purchases')
+        .insert({
+          user_id: userId,
+          content_id: contentId,
+          transaction_id: transaction.id,
+          amount_paid: amount
+        });
+
+      if (purchaseError) {
+        console.error('❌ Purchase creation failed:', purchaseError);
+        throw purchaseError;
+      }
+
+      console.log('✅ Content purchase processed successfully');
+
+    } catch (error) {
+      console.error('❌ Error processing content purchase:', error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const handlePaymentCallback = async () => {
@@ -49,8 +118,9 @@ const PaymentCallback = () => {
           console.log('✅ PaymentCallback: Payment successful');
           setPaymentStatus('success');
           
-          // Si c'est un paiement d'activation de créateur
+          // Traiter le paiement selon son type
           if (result.customData?.type === 'creator_activation') {
+            // Activation de compte créateur
             try {
               console.log('🚀 PaymentCallback: Activating creator account');
               const { error } = await becomeCreator();
@@ -77,6 +147,28 @@ const PaymentCallback = () => {
                 variant: "destructive"
               });
             }
+          } else if (result.customData?.type === 'content_purchase') {
+            // Achat de contenu
+            try {
+              console.log('🔄 PaymentCallback: Processing content purchase...');
+              await processContentPurchase(result.customData, result.data);
+              toast({
+                title: "Achat réussi !",
+                description: "Vous pouvez maintenant accéder au contenu.",
+              });
+            } catch (error) {
+              console.error('❌ PaymentCallback: Content purchase processing failed:', error);
+              toast({
+                title: "Paiement réussi mais erreur de traitement",
+                description: "Votre paiement a été traité mais une erreur s'est produite. Contactez le support.",
+                variant: "destructive"
+              });
+            }
+          } else {
+            toast({
+              title: "Paiement réussi !",
+              description: "Votre transaction a été confirmée.",
+            });
           }
 
         } else if (result.pending) {

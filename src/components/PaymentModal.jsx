@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
+// Version: 2025-01-05 - Fixed mobileNumber reference error
 import { motion } from 'framer-motion';
-import { X, Smartphone, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
 import {
   Dialog,
@@ -13,18 +13,54 @@ import {
 } from './ui/dialog';
 import { fusionPayService } from '../lib/fusionpay';
 import { useAuth } from '../contexts/AuthContext';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, contentTitle }) => {
-  const [mobileNumber, setMobileNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Fonction de validation du numéro gabonais
+  const validateGabonNumber = (phoneNumber) => {
+    if (!phoneNumber) return false;
+    
+    // Extraire le numéro sans le code pays
+    let cleanNumber = phoneNumber.replace(/^\+241/, '').replace(/\s/g, '');
+    
+    // Vérifier que c'est un numéro gabonais (+241)
+    if (!phoneNumber.startsWith('+241')) return false;
+    
+    // Vérifier que le numéro ne commence pas par 0 (format incorrect)
+    if (cleanNumber.startsWith('0')) {
+      return false; // Rejeter directement les numéros commençant par 0
+    }
+    
+    // Vérifier la longueur (8 chiffres)
+    if (cleanNumber.length !== 8) return false;
+    
+    // Vérifier les préfixes valides
+    const validPrefixes = ['74', '77', '76', '65', '60', '61', '62', '66'];
+    const prefix = cleanNumber.substring(0, 2);
+    
+    return validPrefixes.includes(prefix);
+  };
+
+
   const handlePayment = useCallback(async (e) => {
     e.preventDefault();
 
-    // Validation du numéro de téléphone
-    if (!mobileNumber.trim()) {
+    if (!user) {
+      toast({
+        title: "Erreur d'authentification",
+        description: "Vous devez être connecté pour effectuer un paiement.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!phoneNumber) {
       toast({
         title: "Erreur",
         description: "Veuillez saisir votre numéro de téléphone",
@@ -33,12 +69,11 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
       return;
     }
 
-    // Validation du format du numéro (74, 77, 76, 65, 66, 62) - 8 chiffres au total
-    const phoneRegex = /^(74|77|76|65|66|62)[0-9]{6}$/;
-    if (!phoneRegex.test(mobileNumber.replace(/\s/g, ''))) {
+    // Validation spécifique pour le Gabon
+    if (phoneNumber.startsWith('+241') && !validateGabonNumber(phoneNumber)) {
       toast({
-        title: "Erreur",
-        description: "Veuillez saisir un numéro valide de 8 chiffres commençant par 74, 77, 76, 65, 66 ou 62",
+        title: "Numéro invalide",
+        description: "Pour le Gabon, le numéro doit commencer par 74, 77, 76, 65, 60, 61, 62 ou 66 et contenir exactement 8 chiffres (ne pas ajouter de 0 au début).",
         variant: "destructive"
       });
       return;
@@ -49,41 +84,40 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
     try {
       console.log('🚀 PaymentModal: Initiating FusionPay payment');
 
-      // Préparer les données de paiement
+      const clientName = user.name || user.email.split('@')[0];
+      const userId = user.id;
+
       const paymentData = {
-        userId: user.id,
+        userId,
         userEmail: user.email,
-        userName: user.name || user.email,
-        userPhone: mobileNumber.replace(/\s/g, ''),
-        amount: amount,
-        type: type
+        userName: clientName,
+        amount,
+        type,
+        userPhone: phoneNumber, // Le numéro est déjà formaté avec le code pays
+        contentTitle,
+        contentId: type === 'content_purchase' ? contentTitle : null,
       };
 
-      // Initier le paiement via FusionPay
       const result = await fusionPayService.initiateCreatorPayment(paymentData);
 
-      if (result.success) {
+      if (result.success && result.paymentUrl) {
         console.log('✅ PaymentModal: Payment initiated, redirecting to:', result.paymentUrl);
-        
         toast({
           title: "Redirection vers le paiement",
           description: "Vous allez être redirigé vers la page de paiement Mobile Money"
         });
 
-        // Rediriger vers la page de paiement
         setTimeout(() => {
           fusionPayService.redirectToPayment(result.paymentUrl);
         }, 1000);
-
       } else {
-        console.error('❌ PaymentModal: Payment initiation failed:', result.error);
+        console.error('❌ PaymentModal: Payment initiation failed:', result);
         toast({
           title: "Erreur de paiement",
-          description: result.error || "Impossible d'initier le paiement",
+          description: result.error || "Impossible d'initier le paiement. URL de paiement manquante.",
           variant: "destructive"
         });
       }
-
     } catch (error) {
       console.error('❌ PaymentModal: Payment error:', error);
       toast({
@@ -94,7 +128,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
     } finally {
       setLoading(false);
     }
-  }, [mobileNumber, amount, type, user, toast]);
+  }, [phoneNumber, amount, type, user, toast, contentTitle]);
 
   const getPaymentTitle = () => {
     switch (type) {
@@ -110,9 +144,9 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
   const getPaymentDescription = () => {
     switch (type) {
       case 'creator_activation':
-        return 'Payez pour activer votre compte créateur et commencer à monétiser votre contenu';
+        return `Activez votre compte créateur pour ${amount} FCFA. Entrez votre numéro de téléphone Mobile Money.`;
       case 'content_purchase':
-        return `Achetez le contenu "${contentTitle}" de ${creatorName}`;
+        return `Débloquez ce contenu pour ${amount} FCFA. Entrez votre numéro de téléphone Mobile Money.`;
       default:
         return 'Effectuez votre paiement via Mobile Money';
     }
@@ -120,11 +154,10 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700">
+      <DialogContent className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center space-x-2">
-            <Smartphone className="w-5 h-5 text-orange-500" />
-            <span>{getPaymentTitle()}</span>
+          <DialogTitle className="text-2xl font-bold text-orange-500">
+            {getPaymentTitle()}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
             {getPaymentDescription()}
@@ -151,16 +184,26 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Numéro de téléphone Mobile Money
               </label>
-              <Input
-                type="tel"
-                value={mobileNumber}
-                onChange={(e) => setMobileNumber(e.target.value)}
-                placeholder="74123456"
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500"
+              
+              <PhoneInput
+                placeholder="Entrez votre numéro de téléphone"
+                value={phoneNumber}
+                onChange={setPhoneNumber}
+                defaultCountry="GA"
+                countries={['GA', 'CI', 'SN', 'BJ', 'ML', 'TG', 'BF', 'CM', 'NE', 'CD']}
+                className="phone-input-custom"
                 disabled={loading}
+                style={{
+                  '--PhoneInput-color--focus': '#f97316',
+                  '--PhoneInputCountrySelect-marginRight': '0.5rem',
+                }}
               />
+              
               <p className="text-xs text-gray-500 mt-1">
-                Format: 74123456 (8 chiffres, commence par 74, 77, 76, 65, 66 ou 62)
+                {phoneNumber && phoneNumber.startsWith('+241') 
+                  ? "Format Gabon: 74, 77, 76, 65, 60, 61, 62 ou 66 suivi de 6 chiffres (ex: 74001209)"
+                  : "Sélectionnez votre pays et entrez votre numéro Mobile Money"
+                }
               </p>
             </div>
 
@@ -168,29 +211,25 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
             <div className="flex space-x-3 pt-4">
               <Button
                 type="button"
-                variant="outline"
                 onClick={onClose}
+                variant="outline"
+                className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
                 disabled={loading}
-                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
               >
                 Annuler
               </Button>
-              
-              <Button
-                type="submit"
+              <Button 
+                type="submit" 
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" 
                 disabled={loading}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
               >
                 {loading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Redirection...</span>
-                  </div>
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Traitement...
+                  </>
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <ExternalLink className="w-4 h-4" />
-                    <span>Payer maintenant</span>
-                  </div>
+                  `Payer ${amount} FCFA`
                 )}
               </Button>
             </div>
@@ -198,7 +237,40 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
 
           {/* Informations de sécurité */}
           <div className="text-center text-xs text-gray-500">
-            <p>🔒 Paiement sécurisé via FusionPay</p>
+            <p>Paiement sécurisé via FusionPay</p>
+            
+            {/* Images des possibilités de paiement */}
+            <div className="flex justify-center items-center space-x-5 mt-3">
+              <img 
+                src="/payment_logo/airtel_money.jpg" 
+                alt="Airtel Money" 
+                className="w-10 h-10 object-contain"
+              />
+              
+              <img 
+                src="/payment_logo/moov_money.png" 
+                alt="Moov Money" 
+                className="w-10 h-10 object-contain"
+              />
+              
+              <img 
+                src="/payment_logo/mtn.jpg" 
+                alt="MTN Mobile Money" 
+                className="w-10 h-10 object-contain"
+              />
+              
+              <img 
+                src="/payment_logo/wave.png" 
+                alt="Wave" 
+                className="w-10 h-10 object-contain"
+              />
+              
+              <img 
+                src="/payment_logo/orange_money.jpg" 
+                alt="Orange Money" 
+                className="w-10 h-10 object-contain"
+              />
+            </div>
           </div>
         </motion.div>
       </DialogContent>

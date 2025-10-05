@@ -8,6 +8,8 @@ import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/use-toast';
 import { Eye, Play, Image, Plus, User, Lock, Unlock, Video, FileText, X, MapPin, Calendar, MessageCircle, RefreshCw } from 'lucide-react';
+import { fusionPayService } from '../lib/fusionpay';
+import ContentPaymentModal from '../components/ContentPaymentModal';
 
 function HomePage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -37,6 +39,9 @@ function HomePage() {
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     const [showInfoBanner, setShowInfoBanner] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [processingPayment, setProcessingPayment] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedContent, setSelectedContent] = useState(null);
     const videoRefs = useRef({});
 
     // Fonction de déconnexion
@@ -89,6 +94,7 @@ function HomePage() {
                         )
                     `)
                     .eq('is_published', true)
+                .eq('status', 'approved') // Seulement les contenus approuvés
                     .order('created_at', { ascending: false })
                     .limit(20);
 
@@ -164,64 +170,76 @@ function HomePage() {
             return;
         }
 
-        try {
-            const contentItem = content.find(c => c.id === contentId);
-            if (!contentItem) {
-                throw new Error('Contenu non trouvé');
-            }
-
-            // Créer une transaction
-            const { data: transaction, error: transactionError } = await supabase
-                .from('transactions')
-                .insert({
-                    user_id: user.id,
-                    content_id: contentId,
-                    creator_id: contentItem.creator_id,
-                    amount: price,
-                    type: 'achat_unitaire',
-                    payment_method: 'mobile_money',
-                    status: 'pending'
-                })
-                .select()
-                .single();
-
-            if (transactionError) throw transactionError;
-
-            // Simuler un paiement réussi (en V1, on assume que le paiement est toujours réussi)
-            const { error: updateError } = await supabase
-                .from('transactions')
-                .update({ status: 'paid' })
-                .eq('id', transaction.id);
-
-            if (updateError) throw updateError;
-
-            // Créer l'achat
-            const { error: purchaseError } = await supabase
-                .from('purchases')
-                .insert({
-                    user_id: user.id,
-                    content_id: contentId,
-                    transaction_id: transaction.id,
-                    amount_paid: price
-                });
-
-            if (purchaseError) throw purchaseError;
-
-            // Mettre à jour l'état local
-            setPurchasedContent(prev => new Set([...prev, contentId]));
-
-            toast({
-                title: "Achat réussi !",
-                description: "Vous pouvez maintenant accéder au contenu",
-            });
-
-        } catch (error) {
-            console.error('Erreur lors de l\'achat:', error);
+        const contentItem = content.find(c => c.id === contentId);
+        if (!contentItem) {
             toast({
                 title: "Erreur",
-                description: "Impossible de finaliser l'achat",
+                description: "Contenu non trouvé",
                 variant: "destructive"
             });
+            return;
+        }
+
+        // Ouvrir le modal de paiement
+        setSelectedContent({
+            id: contentId,
+            title: contentItem.title || 'Contenu exclusif',
+            price: price
+        });
+        setShowPaymentModal(true);
+    };
+
+    const handlePaymentConfirm = async (mobileNumber) => {
+        if (!selectedContent) return;
+
+        setProcessingPayment(true);
+
+        try {
+            // Préparer les données de paiement pour FusionPay
+            const paymentData = {
+                userId: user.id,
+                userEmail: user.email,
+                userName: user.name || user.email.split('@')[0],
+                userPhone: mobileNumber,
+                amount: selectedContent.price,
+                type: 'content_purchase',
+                contentId: selectedContent.id,
+                contentTitle: selectedContent.title
+            };
+
+            console.log('🚀 HomePage: Initiating FusionPay payment:', paymentData);
+
+            // Initier le paiement via FusionPay
+            const paymentResult = await fusionPayService.initiateCreatorPayment(paymentData);
+
+            if (paymentResult.success && paymentResult.paymentUrl) {
+                toast({
+                    title: "Redirection vers le paiement",
+                    description: "Vous allez être redirigé vers la page de paiement sécurisée",
+                });
+
+                // Fermer le modal
+                setShowPaymentModal(false);
+                setSelectedContent(null);
+
+                // Rediriger vers FusionPay
+                setTimeout(() => {
+                    fusionPayService.redirectToPayment(paymentResult.paymentUrl);
+                }, 1000);
+
+            } else {
+                throw new Error(paymentResult.error || 'Erreur lors de l\'initiation du paiement');
+            }
+
+        } catch (error) {
+            console.error('❌ HomePage: Payment initiation failed:', error);
+            toast({
+                title: "Erreur de paiement",
+                description: error.message || "Impossible d'initier le paiement",
+                variant: "destructive"
+            });
+        } finally {
+            setProcessingPayment(false);
         }
     };
 
@@ -246,26 +264,23 @@ function HomePage() {
                 return;
             }
 
-            // Enregistrer la vue via la fonction SQL
-            const { error } = await supabase.rpc('record_view', {
-                p_user_id: user.id,
-                p_content_id: contentId
-            });
-
-            if (error) {
-                console.error('Erreur lors de l\'enregistrement de la vue:', error);
-                // Si c'est un contenu payant, déclencher le paiement
-                if (price > 0) {
-                    await handlePurchase(contentId, price);
-                }
+            // Si c'est un contenu payant, déclencher le paiement via FusionPay
+            if (price > 0) {
+                await handlePurchase(contentId, price);
             } else {
-                // Marquer comme vu
-                setPurchasedContent(prev => new Set([...prev, contentId]));
-                
-                toast({
-                    title: "Contenu débloqué !",
-                    description: "Vous pouvez maintenant accéder au contenu",
+                // Contenu gratuit - enregistrer la vue
+                const { error } = await supabase.rpc('record_view', {
+                    p_user_id: user.id,
+                    p_content_id: contentId
                 });
+
+                if (!error) {
+            setPurchasedContent(prev => new Set([...prev, contentId]));
+            toast({
+                        title: "Contenu débloqué !",
+                description: "Vous pouvez maintenant accéder au contenu",
+            });
+                }
             }
 
         } catch (error) {
@@ -425,7 +440,7 @@ function HomePage() {
             
 
             {/* Fil d'actualité format 9:16 */}
-            <div className="max-w-md md:max-w-lg lg:max-w-xl mx-auto mt-4 px-4 pb-8">
+            <div className="max-w-md md:max-w-lg lg:max-w-xl mx-auto mt-8 md:mt-4 px-4 pb-8">
                 {content.length > 0 ? (
                     <div className="space-y-6">
                         {content.map((item, index) => {
@@ -451,15 +466,15 @@ function HomePage() {
                                     <div className="p-3 md:p-4 border-b border-gray-700/30 bg-gradient-to-r from-gray-900/40 to-transparent">
                                         <div className="flex items-center space-x-2 md:space-x-3">
                                             <motion.div whileHover={{ scale: 1.1 }} className="relative">
-                                                <img
-                                                    src={item.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.users?.name || 'user'}`}
-                                                    alt={item.users?.name}
+                                        <img
+                                            src={item.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.users?.name || 'user'}`}
+                                            alt={item.users?.name}
                                                     className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-orange-500/50 shadow-lg"
                                                 />
                                                 {item.users?.is_creator && (
                                                     <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-gray-900">
                                                         <span className="text-xs text-white font-bold">✓</span>
-                                                    </div>
+                                            </div>
                                                 )}
                                             </motion.div>
                                             <div className="flex-1 min-w-0">
@@ -470,10 +485,10 @@ function HomePage() {
                                                     <div className="flex items-center space-x-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded-full">
                                                         <Calendar className="w-3 h-3" />
                                                         <span>{formatDate(item.created_at)}</span>
-                                                    </div>
+                                        </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                    </div>
                                 </div>
 
                                     {/* Contenu média */}
@@ -541,6 +556,14 @@ function HomePage() {
                                         {/* Overlay de verrouillage pour contenu payant */}
                                         {!purchasedContent.has(item.id) && item.price > 0 && (
                                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                {/* Miniature en arrière-plan */}
+                                                {item.thumbnail_url && (
+                                                    <img
+                                                        src={item.thumbnail_url}
+                                                        alt="Miniature"
+                                                        className="absolute inset-0 w-full h-full object-cover opacity-30"
+                                                    />
+                                                )}
                                                 <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-purple-900/20 to-black/80 backdrop-blur-[1px]"></div>
                                                 
                                                 <motion.div
@@ -571,9 +594,17 @@ function HomePage() {
                                                     >
                                                          <Button 
                                                              onClick={() => handlePurchase(item.id, item.price)}
-                                                             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-2 rounded-full font-semibold shadow-xl hover:shadow-2xl transition-all duration-200 text-sm"
+                                                             disabled={processingPayment}
+                                                             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-2 rounded-full font-semibold shadow-xl hover:shadow-2xl transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                          >
-                                                             {formatPrice(item.price)} - Débloquer
+                                                             {processingPayment ? (
+                                                                 <>
+                                                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                                                     Traitement...
+                                                                 </>
+                                                             ) : (
+                                                                 `${formatPrice(item.price)} - Débloquer`
+                                                             )}
                                                          </Button>
                                                     </motion.div>
                                                     
@@ -670,6 +701,21 @@ function HomePage() {
                     </div>
                 )}
             </div>
+
+            {/* Modal de paiement pour le contenu */}
+            {showPaymentModal && selectedContent && (
+                <ContentPaymentModal
+                    isOpen={showPaymentModal}
+                    onClose={() => {
+                        setShowPaymentModal(false);
+                        setSelectedContent(null);
+                    }}
+                    onConfirm={handlePaymentConfirm}
+                    contentTitle={selectedContent.title}
+                    amount={selectedContent.price}
+                    loading={processingPayment}
+                />
+            )}
         </div>
     );
 }
