@@ -11,6 +11,7 @@ import { Eye, Play, Image, Plus, User, Lock, Unlock, Video, FileText, X, MapPin,
 import { fusionPayService } from '../lib/fusionpay';
 import ContentPaymentModal from '../components/ContentPaymentModal';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
+import CustomImagePlayer from '../components/CustomImagePlayer';
 
 function HomePage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -129,14 +130,7 @@ function HomePage() {
         loadData();
     }, [user?.id, toast]);
 
-    // Auto-play des vidéos au scroll - Désactivé car nous utilisons CustomVideoPlayer
-    // useEffect(() => {
-    //     const handleScroll = () => {
-    //         // Gestion du scroll désactivée - CustomVideoPlayer gère la lecture
-    //     };
-    //     window.addEventListener('scroll', handleScroll);
-    //     return () => window.removeEventListener('scroll', handleScroll);
-    // }, [content]);
+
 
     const handlePurchase = async (contentId, price) => {
         if (!user) {
@@ -456,29 +450,20 @@ function HomePage() {
                                 </div>
 
                                     {/* Contenu média */}
-                                    <div className="relative flex-1">
+                                    <div className="relative flex-1 overflow-hidden">
                                         {item.type === 'image' && (
-                                            <div className="relative w-full h-full">
-                                                <img
-                                                    src={item.url || 'https://picsum.photos/400/600?random=' + item.id} 
-                                                    alt={item.title}
-                                                    className={`w-full h-full object-cover transition-all duration-300 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-xl brightness-50 saturate-50' : ''}`}
-                                                    onContextMenu={(e) => e.preventDefault()}
-                                                    draggable={false}
-                                                />
-                                                
-                                                {/* Overlay avec titre et description */}
-                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
-                                                    <h3 className="text-white text-lg font-bold mb-2 line-clamp-2">
-                                                        {item.title}
-                                                    </h3>
-                                                    {item.description && (
-                                                        <p className="text-gray-200 text-sm line-clamp-3 leading-relaxed">
-                                                            {item.description}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            <CustomImagePlayer
+                                                src={item.url || 'https://picsum.photos/400/600?random=' + item.id}
+                                                alt={item.title}
+                                                isPurchased={purchasedContent.has(item.id) || item.price === 0}
+                                                onViewContent={() => {
+                                                    if (user?.id && !purchasedContent.has(item.id)) {
+                                                        handleViewContent(item.id, item.price);
+                                                    }
+                                                }}
+                                                blurEffect={!purchasedContent.has(item.id) && item.price > 0}
+                                                className="w-full h-full"
+                                            />
                                         )}
                                         {item.type === 'video' && (
                                             <CustomVideoPlayer
