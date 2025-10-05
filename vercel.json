@@ -1,4 +1,6 @@
 {
+    "installCommand": "npm install --omit=optional false",
+    "buildCommand": "npm run build",
     "rewrites": [
         {
             "source": "/(.*)",
