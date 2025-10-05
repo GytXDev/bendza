@@ -225,7 +225,8 @@ const CustomVideoPlayer = ({
 
   return (
     <div 
-      className={`relative w-full h-full group ${className}`}
+      className={`relative w-full h-full group select-none ${className}`}
+      onContextMenu={(e) => e.preventDefault()}
       onMouseEnter={() => {
         setShowControls(true);
         if (controlsTimeoutRef.current) {
@@ -252,10 +253,13 @@ const CustomVideoPlayer = ({
           blurEffect ? 'blur-xl brightness-50 saturate-50' : ''
         }`}
         onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
         preload="metadata"
         autoPlay={isPreviewMode && isPurchased}
         muted={isPreviewMode}
         loop={isPreviewMode}
+        controlsList="nodownload nofullscreen noremoteplayback"
+        disablePictureInPicture
       />
 
       {/* Overlay de chargement */}

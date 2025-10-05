@@ -212,12 +212,34 @@ function HomePage() {
 
     // Nouvelle fonction pour gérer la vue d'un contenu (paiement unique)
     const handleViewContent = async (contentId, price) => {
-        if (!user) {
-            navigate('/login');
-            return;
-        }
-
         try {
+            // Si c'est un contenu gratuit, l'utilisateur peut y accéder même sans être connecté
+            if (price === 0) {
+                setPurchasedContent(prev => new Set([...prev, contentId]));
+                
+                // Enregistrer la vue seulement si l'utilisateur est connecté
+                if (user?.id) {
+                    const { error } = await supabase.rpc('record_view', {
+                        p_user_id: user.id,
+                        p_content_id: contentId
+                    });
+                    
+                    if (!error) {
+                        toast({
+                            title: "Contenu gratuit !",
+                            description: "Vous pouvez maintenant accéder au contenu",
+                        });
+                    }
+                }
+                return;
+            }
+
+            // Pour les contenus payants, l'utilisateur doit être connecté
+            if (!user) {
+                navigate('/login');
+                return;
+            }
+
             // Vérifier si l'utilisateur est le créateur du contenu
             const contentItem = content.find(c => c.id === contentId);
             if (contentItem && contentItem.creator_id === user.id) {
@@ -232,23 +254,7 @@ function HomePage() {
             }
 
             // Si c'est un contenu payant, déclencher le paiement via FusionPay
-            if (price > 0) {
-                await handlePurchase(contentId, price);
-            } else {
-                // Contenu gratuit - enregistrer la vue
-                const { error } = await supabase.rpc('record_view', {
-                    p_user_id: user.id,
-                    p_content_id: contentId
-                });
-
-                if (!error) {
-            setPurchasedContent(prev => new Set([...prev, contentId]));
-            toast({
-                        title: "Contenu débloqué !",
-                description: "Vous pouvez maintenant accéder au contenu",
-            });
-                }
-            }
+            await handlePurchase(contentId, price);
 
         } catch (error) {
             console.error('Erreur lors de la vue du contenu:', error);
@@ -457,7 +463,7 @@ function HomePage() {
                                                 alt={item.title}
                                                 isPurchased={purchasedContent.has(item.id) || item.price === 0}
                                                 onViewContent={() => {
-                                                    if (user?.id && !purchasedContent.has(item.id)) {
+                                                    if (!purchasedContent.has(item.id)) {
                                                         handleViewContent(item.id, item.price);
                                                     }
                                                 }}
@@ -471,12 +477,12 @@ function HomePage() {
                                                 poster={item.url}
                                                 isPurchased={purchasedContent.has(item.id) || item.price === 0}
                                                 onPlay={() => {
-                                                    if (user?.id && !purchasedContent.has(item.id)) {
+                                                    if (!purchasedContent.has(item.id)) {
                                                         handleViewContent(item.id, item.price);
                                                     }
                                                 }}
                                                 onViewContent={() => {
-                                                    if (user?.id && !purchasedContent.has(item.id)) {
+                                                    if (!purchasedContent.has(item.id)) {
                                                         handleViewContent(item.id, item.price);
                                                     }
                                                 }}
@@ -493,7 +499,7 @@ function HomePage() {
                                             </div>
                                         )}
 
-                                        {/* Overlay de verrouillage pour contenu payant */}
+                                        {/* Overlay de verrouillage pour contenu payant uniquement */}
                                         {!purchasedContent.has(item.id) && item.price > 0 && (
                                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-purple-900/20 to-black/80 backdrop-blur-[1px]"></div>
@@ -574,17 +580,30 @@ function HomePage() {
                                                  <motion.div
                                                      initial={{ opacity: 0, scale: 0.8 }}
                                                      animate={{ opacity: 1, scale: 1 }}
-                                                     className="flex items-center space-x-1 bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30"
+                                                     className={`flex items-center space-x-1 px-2 py-1 rounded-full border ${
+                                                         item.price === 0 
+                                                             ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' 
+                                                             : 'bg-green-500/20 text-green-400 border-green-500/30'
+                                                     }`}
                                                  >
-                                                     <Unlock className="w-2.5 h-2.5" />
-                                                     <span className="text-xs font-semibold hidden md:inline">Accès autorisé</span>
-                                                     <span className="text-xs font-semibold md:hidden">✓</span>
+                                                     {item.price === 0 ? (
+                                                         <>
+                                                         <Unlock className="w-2.5 h-2.5" />
+                                                         <span className="text-xs font-semibold hidden md:inline">Accès autorisé</span>
+                                                         <span className="text-xs font-semibold md:hidden">✓</span>
+                                                     </>
+                                                     ) : (
+                                                         <>
+                                                             <Unlock className="w-2.5 h-2.5" />
+                                                             <span className="text-xs font-semibold hidden md:inline">Accès autorisé</span>
+                                                             <span className="text-xs font-semibold md:hidden">✓</span>
+                                                         </>
+                                                     )}
                                                  </motion.div>
                                              ) : (
                                                  <div className="flex items-center space-x-1 bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30">
                                                      <Lock className="w-2.5 h-2.5" />
                                                      <span className="text-xs font-semibold hidden md:inline">Premium</span>
-                                                     <span className="text-xs font-semibold md:hidden">🔒</span>
                                                  </div>
                                              )}
                                         </div>

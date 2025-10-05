@@ -26,7 +26,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     type: 'image',
-    price: 500,
+    price: 0,
     description: ''
   });
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
     setFormData({
       title: '',
       type: 'image',
-      price: 500,
+      price: 0,
       description: ''
     });
     setSelectedFile(null);
@@ -168,10 +168,19 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       return;
     }
 
-    if (!formData.price || formData.price < 100) {
+    if (formData.price < 0) {
       toast({
         title: "Erreur",
-        description: "Le prix doit être d'au moins 100 FCFA",
+        description: "Le prix ne peut pas être négatif",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.price > 0 && formData.price < 100) {
+      toast({
+        title: "Erreur",
+        description: "Le prix doit être d'au moins 100 FCFA ou 0 pour un contenu gratuit",
         variant: "destructive",
       });
       return;
@@ -454,14 +463,18 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                min="100"
+                min="0"
                 max="50000"
                 step="50"
                 required
                 className="w-full"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Prix minimum: 100 FCFA
+                {formData.price === 0 ? (
+                  <span className="text-blue-400">Contenu gratuit - visible par tous</span>
+                ) : (
+                  <span>Prix minimum: 100 FCFA (ou 0 pour gratuit)</span>
+                )}
               </p>
             </div>
 

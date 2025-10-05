@@ -10,7 +10,8 @@ import {
   LogIn,
   UserPlus,
   Wallet,
-  Shield
+  Shield,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -27,9 +28,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         if (user) {
           menuItems.push({ icon: User, label: 'Profil', path: '/profile' });
           
-          // Admin peut avoir accès à la modération
+          // Admin peut avoir accès à la modération et aux retraits
           if (user?.role === 'admin') {
             menuItems.push({ icon: Shield, label: 'Modération', path: '/moderation' });
+            menuItems.push({ icon: DollarSign, label: 'Retraits Admin', path: '/admin-withdrawals' });
           }
           
           // Créateur (admin ou non) a accès aux outils créateur

@@ -17,6 +17,7 @@ import BecomeCreator from './pages/BecomeCreator'
 import Cashout from './pages/Cashout'
 import PaymentCallback from './pages/PaymentCallback'
 import ModerationPanel from './pages/ModerationPanel'
+import AdminWithdrawals from './pages/AdminWithdrawals'
 
 // Components
 import RequireAuth from './components/RequireAuth'
@@ -26,7 +27,7 @@ function App() {
     return (
         <ErrorBoundary>
             <AuthProvider>
-                <Router>
+                <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                     <Helmet>
                         <title>Bendza - Plateforme de contenu premium</title>
                         <meta name="description" content="Découvrez et créez du contenu exclusif sur Bendza" />
@@ -78,6 +79,14 @@ function App() {
                                 <RequireAuth>
                                     <Layout>
                                         <ModerationPanel />
+                                    </Layout>
+                                </RequireAuth>
+                            } />
+                            
+                            <Route path="/admin-withdrawals" element={
+                                <RequireAuth>
+                                    <Layout>
+                                        <AdminWithdrawals />
                                     </Layout>
                                 </RequireAuth>
                             } />

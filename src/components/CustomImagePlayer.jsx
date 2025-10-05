@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, Download, Eye } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, Eye } from 'lucide-react';
 
 const CustomImagePlayer = ({ 
   src, 
@@ -15,6 +15,7 @@ const CustomImagePlayer = ({
   const [hasError, setHasError] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [scale, setScale] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const imageRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
   const containerRef = useRef(null);
@@ -59,18 +60,25 @@ const CustomImagePlayer = ({
     if (!isPurchased) return;
     if (document.fullscreenElement) {
       document.exitFullscreen();
+      setIsFullscreen(false);
     } else {
       imageRef.current?.requestFullscreen().catch(console.error);
+      setIsFullscreen(true);
     }
   };
 
-  const downloadImage = () => {
-    if (!isPurchased) return;
-    const link = document.createElement('a');
-    link.href = src;
-    link.download = alt || 'image';
-    link.click();
-  };
+
+  // Détecter les changements de plein écran
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const handleMouseEnter = () => {
     setShowControls(true);
@@ -95,7 +103,8 @@ const CustomImagePlayer = ({
 
   return (
     <div 
-      className={`relative w-full h-full group ${className}`}
+      className={`relative w-full h-full group select-none ${className}`}
+      onContextMenu={(e) => e.preventDefault()}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -117,7 +126,8 @@ const CustomImagePlayer = ({
             onLoad={handleImageLoad}
             onError={handleImageError}
             onClick={handleImageClick}
-            onContextMenu={(e) => e.preventDefault()}
+                     onContextMenu={(e) => e.preventDefault()}
+                     onDragStart={(e) => e.preventDefault()}
             draggable={false}
           />
         </div>
@@ -207,20 +217,11 @@ const CustomImagePlayer = ({
             </div>
 
             <div className="flex items-center space-x-3">
-              {/* Télécharger */}
-              <button
-                onClick={downloadImage}
-                className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-full transition-colors"
-                title="Télécharger"
-              >
-                <Download className="w-5 h-5 text-white" />
-              </button>
-
               {/* Plein écran */}
               <button
                 onClick={toggleFullscreen}
                 className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-full transition-colors"
-                title="Plein écran"
+                title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
               >
                 <Maximize className="w-5 h-5 text-white" />
               </button>
