@@ -6,9 +6,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "postinstall": "npm install --include=optional"
+    "build": "node tools/generate-llms.js || true && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",

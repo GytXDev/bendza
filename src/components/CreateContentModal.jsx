@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { uploadContent } from '../lib/storage';
-import { needsOptimization, estimateOptimizedSize, formatFileSize } from '../lib/mediaOptimizer';
+import { formatFileSize } from '../lib/mediaOptimizer';
 
 const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   const { user } = useAuth();
@@ -33,7 +33,6 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
-  const [optimizationInfo, setOptimizationInfo] = useState(null);
 
   const contentTypes = [
     { value: 'image', label: 'Image', icon: ImageIcon },
@@ -50,7 +49,6 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
     });
     setSelectedFile(null);
     setUploadProgress(0);
-    setOptimizationInfo(null);
   };
 
   // Gestion des fichiers
@@ -86,16 +84,6 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       type: isImage ? 'image' : 'video'
     }));
 
-    // Calculer les informations d'optimisation
-    const needsOpt = needsOptimization(file);
-    const estimatedSize = needsOpt ? estimateOptimizedSize(file) : file.size;
-    
-    setOptimizationInfo({
-      needsOptimization: needsOpt,
-      originalSize: file.size,
-      estimatedSize: estimatedSize,
-      reduction: needsOpt ? Math.round((1 - estimatedSize / file.size) * 100) : 0
-    });
 
     // Générer un titre automatique si vide
     if (!formData.title.trim()) {
@@ -148,11 +136,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       }, 200);
 
       const result = await uploadContent(selectedFile, user.id, 'content', {
-        optimization: {
-          maxWidth: 1920,
-          maxHeight: 1080,
-          quality: 0.8
-        }
+        skipOptimization: true
       });
       
       clearInterval(progressInterval);
@@ -253,7 +237,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       }
       onClose();
     }}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Plus className="text-orange-500" size={24} />
@@ -263,7 +247,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Zone de drag & drop */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {!selectedFile ? (
               <div
                 className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
@@ -311,28 +295,26 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
             ) : (
               /* Aperçu du fichier sélectionné */
               <div className="border border-gray-700 rounded-xl p-4 bg-gray-900/50">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    {formData.type === 'image' ? (
-                      <ImageIcon className="w-8 h-8 text-orange-500" />
-                    ) : (
-                      <Play className="w-8 h-8 text-orange-500" />
-                    )}
-                    <div>
-                      <p className="text-white font-medium">{selectedFile.name}</p>
-                      <p className="text-gray-400 text-sm">
-                        {formatFileSize(selectedFile.size)} • {formData.type}
-                      </p>
-                      {optimizationInfo && optimizationInfo.needsOptimization && (
-                        <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                          <p className="text-blue-400 text-xs">
-                            🔄 Optimisation automatique : {optimizationInfo.reduction}% de réduction estimée
-                          </p>
-                          <p className="text-gray-500 text-xs mt-1">
-                            {formatFileSize(optimizationInfo.originalSize)} → {formatFileSize(optimizationInfo.estimatedSize)}
-                          </p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      {formData.type === 'image' ? (
+                        <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-orange-500" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                          <Play className="w-5 h-5 text-orange-500" />
                         </div>
                       )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium truncate">{selectedFile.name}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className="text-gray-400 text-sm">{formatFileSize(selectedFile.size)}</span>
+                        <span className="text-gray-500">•</span>
+                        <span className="text-gray-400 text-sm capitalize">{formData.type}</span>
+                      </div>
                     </div>
                   </div>
                   <Button
@@ -352,31 +334,36 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                   </Button>
                 </div>
                 
-                {/* Aperçu */}
-                {formData.type === 'image' && (
-                  <div className="w-full h-32 bg-gray-800 rounded-lg overflow-hidden">
-                    <img
-                      src={URL.createObjectURL(selectedFile)}
-                      alt="Aperçu"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                
-                {formData.type === 'video' && (
-                  <div className="w-full h-32 bg-gray-800 rounded-lg overflow-hidden relative">
-                    <video
-                      src={URL.createObjectURL(selectedFile)}
-                      className="w-full h-full object-cover"
-                      muted
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center">
-                        <Play className="w-6 h-6 text-white" />
+                {/* Aperçu du média */}
+                <div className="w-full bg-gray-800 rounded-xl overflow-hidden border border-gray-700 shadow-lg">
+                  {formData.type === 'image' && selectedFile && (
+                    <div className="relative">
+                      <img
+                        src={URL.createObjectURL(selectedFile)}
+                        alt="Aperçu"
+                        className="w-full h-64 object-cover"
+                      />
+                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <span className="text-white text-xs font-medium">Image</span>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  
+                  {formData.type === 'video' && selectedFile && (
+                    <div className="relative">
+                      <video
+                        src={URL.createObjectURL(selectedFile)}
+                        className="w-full h-64 object-cover"
+                        controls
+                        preload="metadata"
+                        poster=""
+                      />
+                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <span className="text-white text-xs font-medium">Vidéo</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
