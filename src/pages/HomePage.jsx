@@ -53,8 +53,8 @@ function HomePage() {
     };
 
     // Charger le contenu et les achats de l'utilisateur
-    const loadData = async () => {
-        setContentLoading(true);
+        const loadData = async () => {
+            setContentLoading(true);
         setLoadingTimeout(false);
         
         // Timeout de 6 secondes
@@ -68,71 +68,63 @@ function HomePage() {
             });
         }, 6000);
             
-        try {
-            // Charger le contenu publié avec les informations des créateurs
-            // Cette requête devrait fonctionner même pour les utilisateurs non connectés
-            const { data: contentData, error: contentError } = await supabase
-                .from('content')
-                .select(`
-                    *,
-                    users:creator_id (
-                        id,
-                        name,
-                        email,
-                        photourl,
-                        is_creator
-                    )
-                `)
-                .eq('is_published', true)
+            try {
+                // Charger le contenu publié avec les informations des créateurs
+                const { data: contentData, error: contentError } = await supabase
+                    .from('content')
+                    .select(`
+                        *,
+                        users:creator_id (
+                            id,
+                            name,
+                            email,
+                            photourl,
+                            is_creator
+                        )
+                    `)
+                    .eq('is_published', true)
                 .eq('status', 'approved') // Seulement les contenus approuvés
-                .order('created_at', { ascending: false })
-                .limit(20);
+                    .order('created_at', { ascending: false })
+                    .limit(20);
 
-            if (contentError) {
-                console.error('Error loading content:', contentError);
-                setContent([]);
-                
-                // Afficher un message d'erreur plus informatif
-                toast({
-                    title: "Erreur de chargement",
-                    description: "Impossible de charger le contenu. Vérifiez votre connexion internet.",
-                    variant: "destructive"
-                });
-            } else {
-                setContent(contentData || []);
-            }
-
-            // Charger les achats si utilisateur connecté
-            if (user?.id) {
-                try {
-                    const { data: purchases, error: purchasesError } = await supabase
-                        .from('purchases')
-                        .select('content_id')
-                        .eq('user_id', user.id);
-
-                    if (!purchasesError) {
-                        const purchasedIds = new Set(purchases?.map(p => p.content_id) || []);
-                        setPurchasedContent(purchasedIds);
-                    }
-                } catch (error) {
-                    console.error('Error loading purchases:', error);
-                    // Erreur silencieuse pour les achats
+                if (contentError) {
+                    console.error('Error loading content:', contentError);
+                    setContent([]);
+                } else {
+                    setContent(contentData || []);
                 }
-            }
-        } catch (error) {
-            console.error('Error in loadData:', error);
-            setContent([]);
+
+                // Charger les achats si utilisateur connecté
+                if (user?.id) {
+                    try {
+                        const { data: purchases, error: purchasesError } = await supabase
+                            .from('purchases')
+                            .select('content_id')
+                            .eq('user_id', user.id);
+
+                        if (!purchasesError) {
+                            const purchasedIds = new Set(purchases?.map(p => p.content_id) || []);
+                            setPurchasedContent(purchasedIds);
+                        }
+                    } catch (error) {
+                        console.error('Error loading purchases:', error);
+                        // Erreur silencieuse pour les achats
+                    }
+                }
+            } catch (error) {
+                console.error('Error in loadData:', error);
+                setContent([]);
             toast({
                 title: "Erreur de chargement",
                 description: "Impossible de charger le contenu. Vérifiez votre connexion.",
                 variant: "destructive"
             });
-        } finally {
+            } finally {
             clearTimeout(timeoutId);
-            setContentLoading(false);
+                setContentLoading(false);
             setRefreshing(false);
-        }
-    };
+            }
+        };
 
     useEffect(() => {
         loadData();
@@ -411,6 +403,9 @@ function HomePage() {
                     </div>
                 </motion.div>
             )}
+
+            
+
             {/* Fil d'actualité format 9:16 */}
             <div className="max-w-md md:max-w-lg lg:max-w-xl mx-auto mt-8 md:mt-4 px-4 pb-8">
                 {content.length > 0 ? (
@@ -612,7 +607,7 @@ function HomePage() {
                                  Aucun contenu disponible
                              </h3>
                              <p className="text-gray-400 mb-6 text-sm leading-relaxed">
-                                 {user ? "Soyez le premier à partager du contenu exclusif sur BENDZA" : "Connectez-vous pour découvrir et créer du contenu exclusif"}
+                                 Soyez le premier à partager du contenu exclusif sur BENDZA
                              </p>
                             <div className="space-y-3">
                                  <Button 
@@ -622,29 +617,8 @@ function HomePage() {
                                      <RefreshCw className="w-4 h-4 mr-2" />
                                      Actualiser le fil
                                  </Button>
-                                 
-                                 {/* Boutons conditionnels selon l'état de connexion */}
-                                 {!user ? (
-                                     <div className="space-y-2">
-                                         <Link to="/login" className="block">
-                                             <Button 
-                                                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-2 rounded-full font-semibold transition-all duration-200 w-full text-sm"
-                                             >
-                                                 <User className="w-4 h-4 mr-2" />
-                                                 Se connecter
-                                             </Button>
-                                         </Link>
-                                         <Link to="/register" className="block">
-                                             <Button 
-                                                 variant="outline" 
-                                                 className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white px-6 py-2 rounded-full font-semibold transition-all duration-200 w-full text-sm"
-                                             >
-                                                 Créer un compte
-                                             </Button>
-                                         </Link>
-                                     </div>
-                                 ) : user?.is_creator ? (
-                                     <Link to="/dashboard" className="block">
+                                {user && user?.is_creator && (
+                                    <Link to="/dashboard" className="block">
                                          <Button 
                                              variant="outline" 
                                              className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white px-6 py-2 rounded-full font-semibold transition-all duration-200 w-full group text-sm"
@@ -652,17 +626,8 @@ function HomePage() {
                                              <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-200" />
                                              Créer du contenu
                                          </Button>
-                                     </Link>
-                                 ) : (
-                                     <Link to="/become-creator" className="block">
-                                         <Button 
-                                             variant="outline" 
-                                             className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white px-6 py-2 rounded-full font-semibold transition-all duration-200 w-full text-sm"
-                                         >
-                                             Devenir créateur
-                                         </Button>
-                                     </Link>
-                                 )}
+                                    </Link>
+                                )}
                                 </div>
                             </motion.div>
                     </div>
