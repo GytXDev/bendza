@@ -8,12 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint src --ext js,jsx --fix",
-    "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\"",
-    "fix-db": "node tools/fix-database.js",
-    "setup-storage": "node tools/setup-storage.js"
+    "postinstall": "npm install --include=optional"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
