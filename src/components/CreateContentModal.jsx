@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { uploadContent } from '../lib/storage';
+import { needsOptimization, estimateOptimizedSize, formatFileSize } from '../lib/mediaOptimizer';
 
 const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   const { user } = useAuth();
@@ -32,11 +33,25 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+  const [optimizationInfo, setOptimizationInfo] = useState(null);
 
   const contentTypes = [
     { value: 'image', label: 'Image', icon: ImageIcon },
     { value: 'video', label: 'Vidéo', icon: Play }
   ];
+
+  // Fonction pour réinitialiser le formulaire
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      type: 'image',
+      price: 500,
+      description: ''
+    });
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setOptimizationInfo(null);
+  };
 
   // Gestion des fichiers
   const handleFileSelect = useCallback((file) => {
@@ -70,6 +85,17 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       ...prev,
       type: isImage ? 'image' : 'video'
     }));
+
+    // Calculer les informations d'optimisation
+    const needsOpt = needsOptimization(file);
+    const estimatedSize = needsOpt ? estimateOptimizedSize(file) : file.size;
+    
+    setOptimizationInfo({
+      needsOptimization: needsOpt,
+      originalSize: file.size,
+      estimatedSize: estimatedSize,
+      reduction: needsOpt ? Math.round((1 - estimatedSize / file.size) * 100) : 0
+    });
 
     // Générer un titre automatique si vide
     if (!formData.title.trim()) {
@@ -121,7 +147,13 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
         });
       }, 200);
 
-      const result = await uploadContent(selectedFile, user.id, 'content');
+      const result = await uploadContent(selectedFile, user.id, 'content', {
+        optimization: {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          quality: 0.8
+        }
+      });
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -182,7 +214,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
           type: formData.type,
           price: formData.price,
           url: uploadResult.signedUrl,
-          thumbnail_url: formData.type === 'image' ? uploadResult.signedUrl : uploadResult.signedUrl,
+          thumbnail_url: uploadResult.thumbnailUrl || uploadResult.signedUrl,
           is_published: true
         })
         .select()
@@ -201,16 +233,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       }
 
       onClose();
-
-      // Reset form
-      setFormData({
-        title: '',
-        type: 'image',
-        price: 500,
-        description: ''
-      });
-      setSelectedFile(null);
-      setUploadProgress(0);
+      resetForm();
     } catch (error) {
       console.error('Erreur lors de la création du contenu:', error);
       toast({
@@ -224,7 +247,12 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        resetForm();
+      }
+      onClose();
+    }}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
@@ -293,8 +321,18 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                     <div>
                       <p className="text-white font-medium">{selectedFile.name}</p>
                       <p className="text-gray-400 text-sm">
-                        {(selectedFile.size / 1024 / 1024).toFixed(1)} MB • {formData.type}
+                        {formatFileSize(selectedFile.size)} • {formData.type}
                       </p>
+                      {optimizationInfo && optimizationInfo.needsOptimization && (
+                        <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                          <p className="text-blue-400 text-xs">
+                            🔄 Optimisation automatique : {optimizationInfo.reduction}% de réduction estimée
+                          </p>
+                          <p className="text-gray-500 text-xs mt-1">
+                            {formatFileSize(optimizationInfo.originalSize)} → {formatFileSize(optimizationInfo.estimatedSize)}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Button
