@@ -211,7 +211,7 @@ function ModerationPanel() {
                 <meta name="description" content="Panneau de modération pour les administrateurs BENDZA" />
             </Helmet>
 
-            <div className="max-w-6xl mx-auto px-4 py-4 md:py-8 mt-4 md:mt-0">
+            <div className="max-w-6xl mx-auto px-4 py-4 md:py-8 mt-12 md:mt-0">
                 {/* Header */}
                 <div className="mb-6 md:mb-8">
                     <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Panneau de Modération</h1>
