@@ -6,7 +6,18 @@ const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    // Retourner des valeurs par défaut au lieu de lancer une erreur
+    return {
+      user: null,
+      loading: true,
+      signInWithGoogle: () => Promise.resolve(),
+      signOut: () => Promise.resolve(),
+      resetToken: () => Promise.resolve(),
+      becomeCreator: () => Promise.resolve(),
+      updateProfile: () => Promise.resolve()
+    };
+  }
   return context;
 };
 
@@ -19,11 +30,9 @@ export const AuthProvider = ({ children }) => {
   // Upsert user in DB (ne pas écraser les données existantes)
   const upsertUser = async (user) => {
     if (!user) {
-      console.log('⚠️ AuthContext: upsertUser called with no user');
       return;
     }
     
-    console.log('💾 AuthContext: Upserting user to database:', user.email);
     
     try {
       // D'abord, vérifier si l'utilisateur existe déjà
@@ -40,11 +49,9 @@ export const AuthProvider = ({ children }) => {
       
       if (existingUser) {
         // L'utilisateur existe, ne pas l'écraser - garder les données existantes
-        console.log('✅ AuthContext: User already exists, keeping existing data:', existingUser);
         return;
       } else {
         // L'utilisateur n'existe pas, l'insérer avec les données de Supabase Auth
-        console.log('➕ AuthContext: Inserting new user');
         const userData = {
           id: user.id,
           name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Utilisateur',
@@ -62,7 +69,6 @@ export const AuthProvider = ({ children }) => {
           throw error;
         }
         
-        console.log('✅ AuthContext: User inserted successfully:', data);
       }
     } catch (error) {
       console.error('❌ AuthContext: Upsert user failed:', error);
@@ -72,7 +78,6 @@ export const AuthProvider = ({ children }) => {
 
   // Fetch user profile from DB
   const fetchUserProfile = async (userId) => {
-    console.log('📊 AuthContext: Fetching profile for user ID:', userId);
     
     try {
       const { data, error } = await supabase
@@ -86,7 +91,6 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
       
-      console.log('📊 AuthContext: Profile data received:', data);
       return data;
     } catch (error) {
       console.error('❌ AuthContext: Exception in fetchUserProfile:', error);
@@ -96,36 +100,22 @@ export const AuthProvider = ({ children }) => {
 
   // Handle session
   const handleSession = async (session) => {
-    console.log('🔍 AuthContext: handleSession called with:', session?.user?.email || 'no user');
     
     if (session?.user) {
       const { user: authUser } = session;
-      console.log('👤 AuthContext: Processing user:', authUser.email);
       
       try {
-        console.log('💾 AuthContext: Upserting user...');
         await upsertUser(authUser);
-        console.log('✅ AuthContext: User upserted successfully');
-        
-        console.log('📊 AuthContext: Fetching user profile...');
         const profile = await fetchUserProfile(authUser.id);
-      console.log('📊 AuthContext: Profile fetched:', profile);
-      console.log('🖼️ AuthContext: Photo sources - DB:', profile?.photourl, 'Auth:', authUser.user_metadata?.avatar_url);
-      console.log('👑 AuthContext: User role:', profile?.role);
         
       // Utiliser la photo de la base de données si elle existe, sinon celle de Supabase Auth
       const finalPhotourl = profile?.photourl || authUser.user_metadata?.avatar_url || null;
-      console.log('🖼️ AuthContext: Final photo URL selected:', finalPhotourl);
-      console.log('🖼️ AuthContext: Photo from DB:', profile?.photourl);
-      console.log('🖼️ AuthContext: Photo from Auth:', authUser.user_metadata?.avatar_url);
       
       // Vérifier si on vient de faire une mise à jour récente (dans les 10 dernières secondes)
       const recentUpdate = Date.now() - lastProfileUpdate.current < 10000;
-      console.log('⏰ AuthContext: Recent profile update?', recentUpdate, 'Time since last update:', Date.now() - lastProfileUpdate.current);
       
       // Si on vient de faire une mise à jour récente, ne pas écraser les données
       if (recentUpdate) {
-        console.log('⚠️ AuthContext: Skipping user data update due to recent profile update');
         setLoading(false);
         return;
       }
@@ -141,12 +131,10 @@ export const AuthProvider = ({ children }) => {
         profile: profile
       };
         
-        console.log('🎯 AuthContext: Setting user data:', userData);
         setUser(userData);
         
         // Afficher un message de succès seulement si c'est une nouvelle connexion
         if (session && session.user) {
-          console.log('✅ AuthContext: User successfully authenticated:', userData.email);
         }
         
         // S'assurer que loading est mis à false après setUser
@@ -157,7 +145,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     } else {
-      console.log('🚫 AuthContext: No session, setting user to null');
       setUser(null);
       setLoading(false);
     }
@@ -165,18 +152,15 @@ export const AuthProvider = ({ children }) => {
 
   // On mount, subscribe to auth changes
   useEffect(() => {
-    console.log('🚀 AuthContext: useEffect started');
     
     let mounted = true;
     let listener = null;
     
     const initializeAuth = async () => {
       try {
-        console.log('🔧 AuthContext: Initializing authentication...');
         
         // Récupérer la session initiale
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('🔍 AuthContext: Initial session retrieved:', session?.user?.email || 'no user', error);
         
         if (mounted) {
           await handleSession(session);
@@ -184,15 +168,12 @@ export const AuthProvider = ({ children }) => {
         
         // S'abonner aux changements d'authentification
         if (mounted) {
-          console.log('👂 AuthContext: Setting up auth state listener...');
           const { data } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log('🔄 AuthContext: Auth state change detected:', event, session?.user?.email || 'no user');
             if (mounted) {
               handleSession(session);
             }
           });
           listener = data;
-          console.log('✅ AuthContext: Auth listener set up successfully');
         }
       } catch (error) {
         console.error('❌ AuthContext: Auth initialization error:', error);
@@ -205,7 +186,6 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
 
     return () => {
-      console.log('🧹 AuthContext: Cleanup - unmounting');
       mounted = false;
       if (listener?.subscription) {
         listener.subscription.unsubscribe();
@@ -251,7 +231,6 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setLoading(false);
       
-      console.log('✅ Token réinitialisé avec succès');
     } catch (error) {
       console.error('❌ Erreur lors de la réinitialisation:', error);
     }
@@ -277,7 +256,6 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (updates) => {
     if (!user) throw new Error('User not authenticated');
     
-    console.log('🔄 AuthContext: Updating profile with:', updates);
     
     const { error } = await supabase
       .from('users')
@@ -285,19 +263,16 @@ export const AuthProvider = ({ children }) => {
       .eq('id', user.id);
 
     if (error) {
-      console.error('❌ AuthContext: Error updating profile in database:', error);
+      console.error('AuthContext: Error updating profile in database:', error);
       throw error;
     }
 
-    console.log('✅ AuthContext: Profile updated in database successfully');
     
     // Enregistrer le timestamp de la mise à jour
     lastProfileUpdate.current = Date.now();
     
     // Forcer une récupération du profil depuis la base de données
-    console.log('🔄 AuthContext: Refreshing profile from database...');
     const refreshedProfile = await fetchUserProfile(user.id);
-    console.log('🔄 AuthContext: Refreshed profile:', refreshedProfile);
     
     // Mettre à jour l'utilisateur local avec les données fraîches de la base
     setUser(prev => {
@@ -308,7 +283,6 @@ export const AuthProvider = ({ children }) => {
         photourl: refreshedProfile?.photourl || updates.photourl || prev.photourl,
         profile: refreshedProfile
       };
-      console.log('🔄 AuthContext: Updated local user state with fresh data:', updatedUser);
       return updatedUser;
     });
     

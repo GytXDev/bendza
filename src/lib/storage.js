@@ -5,7 +5,6 @@ import { optimizeMediaFile, needsOptimization, formatFileSize } from './mediaOpt
 export const STORAGE_BUCKETS = {
   AVATARS: 'avatars',
   CONTENT: 'content',
-  THUMBNAILS: 'thumbnails',
   BANNERS: 'banners',
   DOCUMENTS: 'documents',
   TEMP: 'temp'
@@ -22,7 +21,6 @@ export const ALLOWED_FILE_TYPES = {
 // Tailles de fichiers maximales (en bytes)
 export const FILE_SIZE_LIMITS = {
   AVATAR: 5 * 1024 * 1024, // 5MB
-  THUMBNAIL: 2 * 1024 * 1024, // 2MB
   CONTENT: 100 * 1024 * 1024, // 100MB
   TEMP: 50 * 1024 * 1024 // 50MB
 }
@@ -104,16 +102,14 @@ export const uploadContent = async (file, creatorId, contentType = 'content', op
     }
 
     let fileToUpload = file
-    let thumbnailFile = null
     let optimizationInfo = null
 
     // Optimiser le fichier si nécessaire
     if (needsOptimization(file) && !options.skipOptimization) {
-      console.log('🔄 Optimisation du fichier en cours...')
+      console.log('Optimisation du fichier en cours...')
       const optimizationResult = await optimizeMediaFile(file, options.optimization)
       
       fileToUpload = optimizationResult.optimizedFile
-      thumbnailFile = optimizationResult.thumbnailFile
       
       optimizationInfo = {
         originalSize: file.size,
@@ -122,7 +118,7 @@ export const uploadContent = async (file, creatorId, contentType = 'content', op
         type: optimizationResult.type
       }
       
-      console.log(`✅ Fichier optimisé: ${formatFileSize(file.size)} → ${formatFileSize(fileToUpload.size)} (${optimizationInfo.reduction}% de réduction)`)
+      console.log(`Fichier optimisé: ${formatFileSize(file.size)} → ${formatFileSize(fileToUpload.size)} (${optimizationInfo.reduction}% de réduction)`)
     }
 
     // Upload du fichier principal
@@ -138,44 +134,18 @@ export const uploadContent = async (file, creatorId, contentType = 'content', op
 
     if (error) throw error
 
-    // Upload de la miniature si disponible
-    let thumbnailPath = null
-    let thumbnailUrl = null
-    
-    if (thumbnailFile) {
-      const thumbnailFileName = generateFileName(thumbnailFile, `thumb_${creatorId}_`)
-      thumbnailPath = `${creatorId}/thumbnails/${thumbnailFileName}`
-      
-      const { data: thumbnailData, error: thumbnailError } = await supabase.storage
-        .from(STORAGE_BUCKETS.THUMBNAILS)
-        .upload(thumbnailPath, thumbnailFile, {
-          cacheControl: '3600',
-          upsert: false
-        })
+    // Plus de thumbnails séparées - utilisation directe du média principal
 
-      if (thumbnailError) {
-        console.warn('Erreur upload miniature:', thumbnailError)
-      } else {
-        // Récupérer l'URL publique de la miniature
-        const { data: { publicUrl } } = supabase.storage
-          .from(STORAGE_BUCKETS.THUMBNAILS)
-          .getPublicUrl(thumbnailPath)
-        
-        thumbnailUrl = publicUrl
-      }
-    }
-
-    // Récupérer l'URL signée (privée) du fichier principal
-    const { data: { signedUrl } } = await supabase.storage
+    // Récupérer l'URL publique permanente du fichier principal
+    const { data: { publicUrl } } = supabase.storage
       .from(STORAGE_BUCKETS.CONTENT)
-      .createSignedUrl(filePath, 3600) // 1 heure
+      .getPublicUrl(filePath)
 
     return { 
-      signedUrl, 
+      signedUrl: publicUrl, // Utiliser l'URL publique comme URL principale
+      publicUrl, // Ajouter l'URL publique explicitement
       filePath, 
       fileName,
-      thumbnailPath,
-      thumbnailUrl,
       optimizationInfo
     }
   } catch (error) {
@@ -184,43 +154,7 @@ export const uploadContent = async (file, creatorId, contentType = 'content', op
   }
 }
 
-/**
- * Upload d'une miniature
- */
-export const uploadThumbnail = async (file, creatorId, contentId) => {
-  try {
-    // Vérifications
-    if (!isFileTypeAllowed(file, ALLOWED_FILE_TYPES.IMAGE)) {
-      throw new Error('Type de fichier non autorisé. Utilisez JPEG, PNG, WebP ou GIF.')
-    }
-
-    if (!isFileSizeValid(file, FILE_SIZE_LIMITS.THUMBNAIL)) {
-      throw new Error('Fichier trop volumineux. Taille maximale : 2MB.')
-    }
-
-    const fileName = generateFileName(file, `thumb_${contentId}_`)
-    const filePath = `${creatorId}/thumbnails/${fileName}`
-
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKETS.THUMBNAILS)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true
-      })
-
-    if (error) throw error
-
-    // Récupérer l'URL publique
-    const { data: { publicUrl } } = supabase.storage
-      .from(STORAGE_BUCKETS.THUMBNAILS)
-      .getPublicUrl(filePath)
-
-    return { publicUrl, filePath }
-  } catch (error) {
-    console.error('Erreur upload thumbnail:', error)
-    throw error
-  }
-}
+// Fonction uploadThumbnail supprimée - utilisation directe des médias principaux
 
 /**
  * Upload d'une bannière de créateur
@@ -409,6 +343,44 @@ export const cleanupTempFiles = async () => {
     }
   } catch (error) {
     console.error('Erreur nettoyage fichiers temporaires:', error)
+  }
+}
+
+/**
+ * Supprimer un fichier spécifique par chemin
+ */
+export const deleteFileByPath = async (filePath, bucket = STORAGE_BUCKETS.CONTENT) => {
+  try {
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([filePath])
+
+    if (error) throw error
+
+    console.log(`Fichier supprimé: ${filePath}`)
+    return true
+  } catch (error) {
+    console.error('Erreur suppression fichier:', error)
+    throw error
+  }
+}
+
+/**
+ * Supprimer plusieurs fichiers
+ */
+export const deleteFiles = async (filePaths, bucket = STORAGE_BUCKETS.CONTENT) => {
+  try {
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove(filePaths)
+
+    if (error) throw error
+
+    console.log(`${filePaths.length} fichiers supprimés`)
+    return true
+  } catch (error) {
+    console.error('Erreur suppression fichiers:', error)
+    throw error
   }
 }
 

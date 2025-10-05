@@ -18,6 +18,7 @@ import {
     FileText
 } from 'lucide-react';
 import CreateContentModal from '../components/CreateContentModal';
+import EditContentModal from '../components/EditContentModal';
 
 function CreatorDashboard() {
     const { user } = useAuth();
@@ -25,6 +26,8 @@ function CreatorDashboard() {
     const [content, setContent] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedContent, setSelectedContent] = useState(null);
     const [stats, setStats] = useState({
         totalContent: 0,
         totalViews: 0
@@ -81,6 +84,11 @@ function CreatorDashboard() {
         } catch (error) {
             console.error('Erreur lors du chargement des statistiques:', error);
         }
+    };
+
+    const handleEditContent = (contentItem) => {
+        setSelectedContent(contentItem);
+        setShowEditModal(true);
     };
 
     const handleDeleteContent = async (contentId) => {
@@ -255,6 +263,16 @@ function CreatorDashboard() {
                                                         <span className="text-orange-500 font-semibold">
                                                             {item.price} FCFA
                                                         </span>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                            item.status === 'approved' 
+                                                                ? 'bg-green-500/20 text-green-400' 
+                                                                : item.status === 'rejected'
+                                                                ? 'bg-red-500/20 text-red-400'
+                                                                : 'bg-yellow-500/20 text-yellow-400'
+                                                        }`}>
+                                                            {item.status === 'approved' ? 'Approuvé' : 
+                                                             item.status === 'rejected' ? 'Rejeté' : 'En attente'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -262,6 +280,7 @@ function CreatorDashboard() {
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
+                                                    onClick={() => handleEditContent(item)}
                                                     className="border-gray-600 text-gray-300 hover:border-orange-500 hover:text-orange-500"
                                                 >
                                                     <Edit className="w-4 h-4" />
@@ -289,6 +308,17 @@ function CreatorDashboard() {
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onContentCreated={fetchContent}
+            />
+
+            {/* Modal d'édition de contenu */}
+            <EditContentModal
+                isOpen={showEditModal}
+                onClose={() => {
+                    setShowEditModal(false);
+                    setSelectedContent(null);
+                }}
+                content={selectedContent}
+                onContentUpdated={fetchContent}
             />
         </div>
     );

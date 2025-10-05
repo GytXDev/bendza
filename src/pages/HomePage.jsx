@@ -10,27 +10,16 @@ import { useToast } from '../components/ui/use-toast';
 import { Eye, Play, Image, Plus, User, Lock, Unlock, Video, FileText, X, MapPin, Calendar, MessageCircle, RefreshCw } from 'lucide-react';
 import { fusionPayService } from '../lib/fusionpay';
 import ContentPaymentModal from '../components/ContentPaymentModal';
+import CustomVideoPlayer from '../components/CustomVideoPlayer';
 
 function HomePage() {
     const { user, loading: authLoading, signOut } = useAuth();
     const navigate = useNavigate();
     const { toast } = useToast();
     
-    // Debug logs
-    console.log('🏠 HomePage: user state:', user);
-    console.log('🏠 HomePage: authLoading:', authLoading);
-    
     // Effet pour détecter les changements d'utilisateur
     useEffect(() => {
-        console.log('🏠 HomePage: User state changed:', user ? 'Connected' : 'Not connected');
-        if (user) {
-            console.log('🏠 HomePage: User details:', {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                is_creator: user.is_creator
-            });
-        }
+        // User state change detection
     }, [user]);
     
     const [content, setContent] = useState([]);
@@ -42,7 +31,6 @@ function HomePage() {
     const [processingPayment, setProcessingPayment] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedContent, setSelectedContent] = useState(null);
-    const videoRefs = useRef({});
 
     // Fonction de déconnexion
     const handleSignOut = async () => {
@@ -141,28 +129,14 @@ function HomePage() {
         loadData();
     }, [user?.id, toast]);
 
-    // Auto-play des vidéos au scroll
-    useEffect(() => {
-        const handleScroll = () => {
-            const videos = Object.values(videoRefs.current);
-            videos.forEach(video => {
-                if (video) {
-                    const rect = video.getBoundingClientRect();
-                    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-                    const isInCenter = rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2;
-                    
-                    if (isInCenter && !video.paused) {
-                        video.play().catch(console.log);
-                    } else if (!isVisible || !isInCenter) {
-                        video.pause();
-                    }
-                }
-            });
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [content]);
+    // Auto-play des vidéos au scroll - Désactivé car nous utilisons CustomVideoPlayer
+    // useEffect(() => {
+    //     const handleScroll = () => {
+    //         // Gestion du scroll désactivée - CustomVideoPlayer gère la lecture
+    //     };
+    //     window.addEventListener('scroll', handleScroll);
+    //     return () => window.removeEventListener('scroll', handleScroll);
+    // }, [content]);
 
     const handlePurchase = async (contentId, price) => {
         if (!user) {
@@ -207,7 +181,6 @@ function HomePage() {
                 contentTitle: selectedContent.title
             };
 
-            console.log('🚀 HomePage: Initiating FusionPay payment:', paymentData);
 
             // Initier le paiement via FusionPay
             const paymentResult = await fusionPayService.initiateCreatorPayment(paymentData);
@@ -444,15 +417,6 @@ function HomePage() {
                 {content.length > 0 ? (
                     <div className="space-y-6">
                         {content.map((item, index) => {
-                            console.log('📱 Content item:', {
-                                id: item.id,
-                                type: item.type,
-                                url: item.url,
-                                thumbnail_url: item.thumbnail_url,
-                                price: item.price,
-                                title: item.title
-                            });
-                            
                             return (
                                 <motion.article
                                 key={item.id}
@@ -494,55 +458,46 @@ function HomePage() {
                                     {/* Contenu média */}
                                     <div className="relative flex-1">
                                         {item.type === 'image' && (
-                                            <img
-                                                src={item.url || item.thumbnail_url || 'https://picsum.photos/400/600?random=' + item.id} 
-                                                alt={item.title}
-                                                className={`w-full h-full object-cover transition-all duration-300 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-xl brightness-50 saturate-50' : ''}`}
-                                                onContextMenu={(e) => e.preventDefault()}
-                                                draggable={false}
-                                            />
+                                            <div className="relative w-full h-full">
+                                                <img
+                                                    src={item.url || 'https://picsum.photos/400/600?random=' + item.id} 
+                                                    alt={item.title}
+                                                    className={`w-full h-full object-cover transition-all duration-300 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-xl brightness-50 saturate-50' : ''}`}
+                                                    onContextMenu={(e) => e.preventDefault()}
+                                                    draggable={false}
+                                                />
+                                                
+                                                {/* Overlay avec titre et description */}
+                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
+                                                    <h3 className="text-white text-lg font-bold mb-2 line-clamp-2">
+                                                        {item.title}
+                                                    </h3>
+                                                    {item.description && (
+                                                        <p className="text-gray-200 text-sm line-clamp-3 leading-relaxed">
+                                                            {item.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
                                         )}
                                         {item.type === 'video' && (
-                                            <div className="relative w-full h-full">
-                                                <video
-                                                    ref={el => videoRefs.current[item.id] = el}
-                                                    src={item.url || 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'} 
-                                                    poster={item.thumbnail_url || 'https://picsum.photos/400/600?random=' + item.id}
-                                                    controls={purchasedContent.has(item.id) || item.price === 0}
-                                                    controlsList="nodownload nofullscreen noremoteplayback"
-                                                    disablePictureInPicture
-                                                    className={`w-full h-full object-cover transition-all duration-300 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-xl brightness-50 saturate-50' : ''}`}
-                                                    onPlay={() => {
-                                                        if (user?.id && !purchasedContent.has(item.id)) {
-                                                            handleViewContent(item.id, item.price);
-                                                        }
-                                                    }}
-                                                    onContextMenu={(e) => e.preventDefault()}
-                                                >
-                                                    <source src={item.url || 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'} type="video/mp4" />
-                                                    Votre navigateur ne supporte pas la lecture de vidéos.
-                                                </video>
-                                                
-                                                {purchasedContent.has(item.id) || item.price === 0 ? (
-                                                    <div className="absolute bottom-4 right-4">
-                                                        <button
-                                                            onClick={() => {
-                                                                const video = videoRefs.current[item.id];
-                                                                if (video) {
-                                                                    if (video.paused) {
-                                                                        video.play();
-                                                                    } else {
-                                                                        video.pause();
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors backdrop-blur-sm border border-white/20"
-                                                        >
-                                                            <Play className="w-6 h-6 text-white" />
-                                                        </button>
-                                                    </div>
-                                                ) : null}
-                                            </div>
+                                            <CustomVideoPlayer
+                                                src={item.url}
+                                                poster={item.url}
+                                                isPurchased={purchasedContent.has(item.id) || item.price === 0}
+                                                onPlay={() => {
+                                                    if (user?.id && !purchasedContent.has(item.id)) {
+                                                        handleViewContent(item.id, item.price);
+                                                    }
+                                                }}
+                                                onViewContent={() => {
+                                                    if (user?.id && !purchasedContent.has(item.id)) {
+                                                        handleViewContent(item.id, item.price);
+                                                    }
+                                                }}
+                                                blurEffect={!purchasedContent.has(item.id) && item.price > 0}
+                                                className="w-full h-full"
+                                            />
                                         )}
                                         {item.type === 'text' && (
                                             <div className={`w-full h-full flex items-center justify-center p-6 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-md' : ''}`}>
@@ -556,14 +511,6 @@ function HomePage() {
                                         {/* Overlay de verrouillage pour contenu payant */}
                                         {!purchasedContent.has(item.id) && item.price > 0 && (
                                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                {/* Miniature en arrière-plan */}
-                                                {item.thumbnail_url && (
-                                                    <img
-                                                        src={item.thumbnail_url}
-                                                        alt="Miniature"
-                                                        className="absolute inset-0 w-full h-full object-cover opacity-30"
-                                                    />
-                                                )}
                                                 <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-purple-900/20 to-black/80 backdrop-blur-[1px]"></div>
                                                 
                                                 <motion.div
@@ -713,6 +660,7 @@ function HomePage() {
                     onConfirm={handlePaymentConfirm}
                     contentTitle={selectedContent.title}
                     amount={selectedContent.price}
+                    contentId={selectedContent.id}
                     loading={processingPayment}
                 />
             )}

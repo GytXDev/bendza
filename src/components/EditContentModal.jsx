@@ -1,7 +1,6 @@
-
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Play, Image as ImageIcon, Upload, X, Check, AlertCircle } from 'lucide-react';
+import { Edit, Play, Image as ImageIcon, Upload, X, Check, AlertCircle, Save } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -15,11 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
-import { uploadContent } from '../lib/storage';
+import { uploadContent, deleteFileByPath } from '../lib/storage';
 import { formatFileSize } from '../lib/mediaOptimizer';
-import MultipleMediaUpload from './MultipleMediaUpload';
 
-const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
+const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef(null);
@@ -34,8 +32,22 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
-  const [multipleMediaMode, setMultipleMediaMode] = useState(false);
-  const [createdContentId, setCreatedContentId] = useState(null);
+  const [hasNewFile, setHasNewFile] = useState(false);
+
+  // Initialiser le formulaire avec les données du contenu
+  useEffect(() => {
+    if (content) {
+      setFormData({
+        title: content.title || '',
+        type: content.type || 'image',
+        price: content.price || 500,
+        description: content.description || ''
+      });
+      setSelectedFile(null);
+      setHasNewFile(false);
+      setUploadProgress(0);
+    }
+  }, [content]);
 
   const contentTypes = [
     { value: 'image', label: 'Image', icon: ImageIcon },
@@ -44,16 +56,17 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
 
   // Fonction pour réinitialiser le formulaire
   const resetForm = () => {
-    setFormData({
-      title: '',
-      type: 'image',
-      price: 500,
-      description: ''
-    });
+    if (content) {
+      setFormData({
+        title: content.title || '',
+        type: content.type || 'image',
+        price: content.price || 500,
+        description: content.description || ''
+      });
+    }
     setSelectedFile(null);
     setUploadProgress(0);
-    setMultipleMediaMode(false);
-    setCreatedContentId(null);
+    setHasNewFile(false);
   };
 
   // Gestion des fichiers
@@ -84,11 +97,11 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
     }
 
     setSelectedFile(file);
+    setHasNewFile(true);
     setFormData(prev => ({
       ...prev,
       type: isImage ? 'image' : 'video'
     }));
-
 
     // Générer un titre automatique si vide
     if (!formData.title.trim()) {
@@ -121,8 +134,8 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
     }
   }, [handleFileSelect]);
 
-  // Upload du fichier
-  const uploadFile = async () => {
+  // Upload du nouveau fichier
+  const uploadNewFile = async () => {
     if (!selectedFile || !user) return null;
 
     setUploading(true);
@@ -177,78 +190,76 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       return;
     }
 
-    if (!multipleMediaMode && !selectedFile) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
-      let contentData = {
-        creator_id: user.id,
+      let updateData = {
         title: formData.title,
         description: formData.description,
         type: formData.type,
         price: formData.price,
-        is_published: false, // En attente de modération
-        status: 'pending' // Statut par défaut
+        status: 'pending', // Remettre en attente de modération après modification
+        is_published: false, // Dépublier temporairement
+        updated_at: new Date().toISOString()
       };
 
-      // Si mode médias multiples, créer le contenu sans URL
-      if (multipleMediaMode) {
-        contentData.url = ''; // URL vide pour les médias multiples
-      } else {
-        // Upload du fichier unique
-        const uploadResult = await uploadFile();
-        if (!uploadResult) throw new Error('Erreur lors de l\'upload');
-        contentData.url = uploadResult.publicUrl;
+      // Si un nouveau fichier a été sélectionné
+      if (hasNewFile && selectedFile) {
+        // Upload du nouveau fichier
+        const uploadResult = await uploadNewFile();
+        if (!uploadResult) throw new Error('Erreur lors de l\'upload du nouveau fichier');
+
+        // Supprimer l'ancien fichier si possible
+        try {
+          if (content.url) {
+            // Extraire le chemin du fichier de l'URL
+            const urlParts = content.url.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            const filePath = `${user.id}/content/${fileName}`;
+            await deleteFileByPath(filePath, 'content');
+          }
+        } catch (deleteError) {
+          console.warn('Impossible de supprimer l\'ancien fichier:', deleteError);
+        }
+
+        updateData.url = uploadResult.publicUrl;
       }
 
-      // Créer le contenu en base
+      // Mettre à jour le contenu en base
       const { data, error } = await supabase
         .from('content')
-        .insert(contentData)
+        .update(updateData)
+        .eq('id', content.id)
         .select()
         .single();
 
       if (error) throw error;
 
-      if (multipleMediaMode) {
-        setCreatedContentId(data.id);
-        toast({
-          title: "Contenu créé !",
-          description: "Vous pouvez maintenant ajouter plusieurs médias à ce contenu",
-        });
-      } else {
-        toast({
-          title: "Contenu créé !",
-          description: "Votre contenu a été soumis et est en attente de modération",
-        });
+      toast({
+        title: "Contenu mis à jour !",
+        description: "Vos modifications ont été sauvegardées et le contenu est en attente de modération",
+      });
 
-        // Appeler la fonction de callback pour rafraîchir la liste
-        if (onContentCreated) {
-          onContentCreated();
-        }
-
-        resetForm();
-        onClose();
+      // Appeler la fonction de callback pour rafraîchir la liste
+      if (onContentUpdated) {
+        onContentUpdated();
       }
+
+      onClose();
+      resetForm();
     } catch (error) {
-      console.error('Erreur lors de la création du contenu:', error);
+      console.error('Erreur lors de la mise à jour du contenu:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la création du contenu",
+        description: "Une erreur est survenue lors de la mise à jour du contenu",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  if (!content) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -260,56 +271,27 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       <DialogContent className="sm:max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Plus className="text-orange-500" size={24} />
-            <span>Créer du contenu</span>
+            <Edit className="text-orange-500" size={24} />
+            <span>Modifier le contenu</span>
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Option médias multiples */}
-          <div className="flex items-center space-x-3 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-            <input
-              type="checkbox"
-              id="multiple-media"
-              checked={multipleMediaMode}
-              onChange={(e) => {
-                setMultipleMediaMode(e.target.checked);
-                if (e.target.checked) {
-                  setSelectedFile(null);
-                  setUploadProgress(0);
-                }
-              }}
-              className="w-4 h-4 text-orange-500 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
-            />
-            <label htmlFor="multiple-media" className="text-sm text-gray-300 cursor-pointer">
-              Créer un contenu avec plusieurs médias (images/vidéos)
-            </label>
-          </div>
-
-          {/* Zone de drag & drop ou médias multiples */}
+          {/* Zone de drag & drop pour nouveau fichier */}
           <div className="space-y-6">
-            {multipleMediaMode ? (
-              /* Mode médias multiples */
-              <div className="space-y-4">
-                <p className="text-sm text-gray-400">
-                  Vous pourrez ajouter plusieurs médias après avoir créé le contenu.
-                </p>
-                {createdContentId && (
-                  <MultipleMediaUpload
-                    contentId={createdContentId}
-                    onMediaAdded={() => {
-                      toast({
-                        title: "Médias ajoutés !",
-                        description: "Votre contenu avec médias multiples a été créé",
-                      });
-                      if (onContentCreated) onContentCreated();
-                      resetForm();
-                      onClose();
-                    }}
-                  />
-                )}
+            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-blue-500 font-medium">Modifier le média</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Vous pouvez remplacer le fichier actuel par un nouveau. Laissez vide pour conserver le fichier existant.
+                  </p>
+                </div>
               </div>
-            ) : !selectedFile ? (
+            </div>
+
+            {!hasNewFile ? (
               <div
                 className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
                   dragActive
@@ -341,7 +323,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                   />
                   <div>
                     <h3 className={`text-lg font-semibold ${dragActive ? 'text-orange-500' : 'text-white'}`}>
-                      {dragActive ? 'Déposez votre fichier ici' : 'Glissez-déposez votre fichier'}
+                      {dragActive ? 'Déposez votre nouveau fichier ici' : 'Remplacer le fichier actuel'}
                     </h3>
                     <p className="text-gray-400 mt-1">
                       ou <span className="text-orange-500 cursor-pointer">cliquez pour sélectionner</span>
@@ -354,7 +336,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                 </motion.div>
               </div>
             ) : (
-              /* Aperçu du fichier sélectionné */
+              /* Aperçu du nouveau fichier sélectionné */
               <div className="border border-gray-700 rounded-xl p-4 bg-gray-900/50">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
@@ -375,6 +357,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                         <span className="text-gray-400 text-sm">{formatFileSize(selectedFile.size)}</span>
                         <span className="text-gray-500">•</span>
                         <span className="text-gray-400 text-sm capitalize">{formData.type}</span>
+                        <span className="text-orange-500 text-xs font-medium">(nouveau)</span>
                       </div>
                     </div>
                   </div>
@@ -384,6 +367,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                     size="sm"
                     onClick={() => {
                       setSelectedFile(null);
+                      setHasNewFile(false);
                       setUploadProgress(0);
                       if (fileInputRef.current) {
                         fileInputRef.current.value = '';
@@ -395,7 +379,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                   </Button>
                 </div>
                 
-                {/* Aperçu du média */}
+                {/* Aperçu du nouveau média */}
                 <div className="w-full bg-gray-800 rounded-xl overflow-hidden border border-gray-700 shadow-lg">
                   {formData.type === 'image' && selectedFile && (
                     <div className="relative">
@@ -405,7 +389,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                         className="w-full h-64 object-cover"
                       />
                       <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1">
-                        <span className="text-white text-xs font-medium">Image</span>
+                        <span className="text-white text-xs font-medium">Nouvelle image</span>
                       </div>
                     </div>
                   )}
@@ -420,7 +404,43 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                         poster=""
                       />
                       <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1">
-                        <span className="text-white text-xs font-medium">Vidéo</span>
+                        <span className="text-white text-xs font-medium">Nouvelle vidéo</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Aperçu du fichier actuel */}
+            {!hasNewFile && content.url && (
+              <div className="border border-gray-700 rounded-xl p-4 bg-gray-900/30">
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Fichier actuel</h4>
+                <div className="w-full bg-gray-800 rounded-xl overflow-hidden border border-gray-700 shadow-lg">
+                  {content.type === 'image' && (
+                    <div className="relative">
+                      <img
+                        src={content.url}
+                        alt={content.title}
+                        className="w-full h-64 object-cover"
+                      />
+                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <span className="text-white text-xs font-medium">Image actuelle</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {content.type === 'video' && (
+                    <div className="relative">
+                      <video
+                        src={content.url}
+                        className="w-full h-64 object-cover"
+                        controls
+                        preload="metadata"
+                        poster={content.url}
+                      />
+                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <span className="text-white text-xs font-medium">Vidéo actuelle</span>
                       </div>
                     </div>
                   )}
@@ -428,6 +448,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
               </div>
             )}
           </div>
+
           {/* Formulaire responsive */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Titre */}
@@ -465,7 +486,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
               </p>
             </div>
 
-            {/* Type de contenu (auto-détecté) */}
+            {/* Type de contenu */}
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 Type de contenu
@@ -477,7 +498,9 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                   <Play className="w-5 h-5 text-orange-500" />
                 )}
                 <span className="text-white capitalize">{formData.type}</span>
-                <span className="text-gray-400 text-sm">(auto-détecté)</span>
+                {hasNewFile && (
+                  <span className="text-orange-500 text-sm">(auto-détecté)</span>
+                )}
               </div>
             </div>
 
@@ -512,20 +535,6 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
             </div>
           )}
 
-          {/* Info */}
-          <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg">
-            <div className="flex items-start space-x-3">
-              <Check className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm text-blue-500 font-medium">Upload direct</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Votre fichier sera automatiquement hébergé sur nos serveurs sécurisés. 
-                  Pas besoin de liens externes !
-                </p>
-              </div>
-            </div>
-          </div>
-
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               type="button"
@@ -539,17 +548,17 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
             <Button
               type="submit"
               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50"
-              disabled={loading || uploading || !selectedFile}
+              disabled={loading || uploading}
             >
               {loading || uploading ? (
                 <div className="flex items-center">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  {uploading ? 'Upload...' : 'Publication...'}
+                  {uploading ? 'Upload...' : 'Sauvegarde...'}
                 </div>
               ) : (
                 <div className="flex items-center">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Publier le contenu
+                  <Save className="w-4 h-4 mr-2" />
+                  Sauvegarder les modifications
                 </div>
               )}
             </Button>
@@ -560,4 +569,4 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
   );
 };
 
-export default CreateContentModal;
+export default EditContentModal;

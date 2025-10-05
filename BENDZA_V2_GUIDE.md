@@ -232,9 +232,7 @@ SELECT * FROM notifications WHERE user_id = 'user_id';
 ### Logs de Debug
 
 ```javascript
-// Activer les logs dans la console
-console.log('🏠 HomePageV2: user state:', user);
-console.log('📱 Content item:', contentData);
+
 ```
 
 ## 📈 Performance

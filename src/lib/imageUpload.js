@@ -161,10 +161,10 @@ export class ImageUploadService {
 
             // Génération du nom de fichier
             const fileName = this.generateFileName(userId, file.name)
-            console.log('📝 Nom de fichier généré:', fileName)
+            console.log('Nom de fichier généré:', fileName)
 
             // Upload vers Supabase Storage
-            console.log(`📤 Upload vers le stockage (bucket: ${bucketName})...`)
+            console.log(`Upload vers le stockage (bucket: ${bucketName})...`)
             const { data, error } = await supabase.storage
                 .from(bucketName)
                 .upload(fileName, compressedFile, {

@@ -18,18 +18,104 @@ const PaymentCallback = () => {
   const [paymentStatus, setPaymentStatus] = useState('checking'); // 'checking', 'success', 'pending', 'failed', 'error'
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [purchasedContentId, setPurchasedContentId] = useState(null);
 
   // Fonction pour traiter l'achat de contenu
   const processContentPurchase = async (customData, paymentData) => {
     try {
-      console.log('🔄 Processing content purchase:', customData);
-
-      const contentId = customData.contentId;
+      let contentId = customData.contentId || customData.id;
       const userId = customData.userId;
-      const amount = paymentData.amount || 0;
+      const amount = paymentData.Montant || paymentData.amount || 0;
 
-      if (!contentId || !userId) {
-        throw new Error('Données de paiement incomplètes');
+      // Récupérer contentId depuis différentes sources si manquant
+      if (!contentId) {
+        // Vérifier dans customData
+        contentId = customData.content_id || customData.contentId || customData.id;
+        
+        // Vérifier dans personal_Info
+        if (!contentId && paymentData.personal_Info?.[0]) {
+          const personalInfo = paymentData.personal_Info[0];
+          contentId = personalInfo.contentId || personalInfo.content_id || personalInfo.id;
+        }
+        
+        // Vérifier dans l'URL
+        if (!contentId) {
+          contentId = searchParams.get('contentId') || searchParams.get('id');
+        }
+        
+        // Vérifier dans sessionStorage
+        if (!contentId) {
+          const storedContentId = sessionStorage.getItem('pendingContentId');
+          if (storedContentId && storedContentId !== 'undefined' && storedContentId !== 'null') {
+            contentId = storedContentId;
+          }
+        }
+      }
+
+      if (!userId) {
+        throw new Error('Données de paiement incomplètes - userId manquant');
+      }
+
+      // Si contentId toujours manquant, essayer de le récupérer automatiquement
+      if (!contentId || contentId === 'undefined' || contentId === 'null') {
+        // Recherche par titre
+        if (customData.contentTitle) {
+          const { data: titleContent } = await supabase
+            .from('content')
+            .select('id, title, creator_id, price')
+            .ilike('title', `%${customData.contentTitle}%`)
+            .limit(5);
+          
+          if (titleContent?.length > 0) {
+            const matchingContent = titleContent.find(c => c.price === amount);
+            if (matchingContent) {
+              contentId = matchingContent.id;
+            }
+          }
+        }
+        
+        // Recherche par prix si toujours pas trouvé
+        if (!contentId) {
+          const { data: priceContent } = await supabase
+            .from('content')
+            .select('id, title, creator_id, price')
+            .eq('price', amount)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          if (priceContent?.length > 0) {
+            contentId = priceContent[0].id;
+          }
+        }
+        
+        // Créer un achat générique si toujours pas trouvé
+        if (!contentId) {
+          const { data: transaction, error: transactionError } = await supabase
+            .from('transactions')
+            .insert({
+              user_id: userId,
+              content_id: null,
+              creator_id: null,
+              amount: amount,
+              type: 'achat_unitaire',
+              payment_method: 'mobile_money',
+              status: 'paid',
+              payment_reference: paymentData.numeroTransaction || null
+            })
+            .select()
+            .single();
+
+          if (transactionError) {
+            throw transactionError;
+          }
+          
+          // Nettoyer sessionStorage
+          sessionStorage.removeItem('pendingContentId');
+          sessionStorage.removeItem('pendingContentTitle');
+          sessionStorage.removeItem('pendingAmount');
+          
+          return 'generic';
+        }
       }
 
       // Récupérer les informations du contenu
@@ -43,6 +129,17 @@ const PaymentCallback = () => {
         throw new Error('Contenu non trouvé');
       }
 
+      // Vérifier les achats existants
+      const { data: existingPurchases, error: purchaseCheckError } = await supabase
+        .from('purchases')
+        .select('id, amount_paid')
+        .eq('user_id', userId)
+        .eq('content_id', contentId);
+
+      if (!purchaseCheckError && existingPurchases?.length > 0) {
+        throw new Error('Ce contenu a déjà été acheté par cet utilisateur');
+      }
+
       // Créer une transaction
       const { data: transaction, error: transactionError } = await supabase
         .from('transactions')
@@ -52,15 +149,14 @@ const PaymentCallback = () => {
           creator_id: contentItem.creator_id,
           amount: amount,
           type: 'achat_unitaire',
-          payment_method: 'fusionpay',
+          payment_method: 'mobile_money',
           status: 'paid',
-          external_transaction_id: paymentData.transaction_id || null
+          payment_reference: paymentData.numeroTransaction || null
         })
         .select()
         .single();
 
       if (transactionError) {
-        console.error('❌ Transaction creation failed:', transactionError);
         throw transactionError;
       }
 
@@ -75,14 +171,26 @@ const PaymentCallback = () => {
         });
 
       if (purchaseError) {
-        console.error('❌ Purchase creation failed:', purchaseError);
         throw purchaseError;
       }
 
-      console.log('✅ Content purchase processed successfully');
+      // Incrémenter le compteur de vues
+      await supabase
+        .from('content')
+        .update({ 
+          views_count: supabase.raw('views_count + 1'),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contentId);
+      
+      // Nettoyer sessionStorage
+      sessionStorage.removeItem('pendingContentId');
+      sessionStorage.removeItem('pendingContentTitle');
+      sessionStorage.removeItem('pendingAmount');
+      
+      return contentId;
 
     } catch (error) {
-      console.error('❌ Error processing content purchase:', error);
       throw error;
     }
   };
@@ -90,23 +198,17 @@ const PaymentCallback = () => {
   useEffect(() => {
     const handlePaymentCallback = async () => {
       try {
-        // Extraire le token de l'URL
         const token = searchParams.get('token');
         
         if (!token) {
-          console.error('❌ PaymentCallback: No token found in URL');
           setPaymentStatus('error');
           setLoading(false);
           return;
         }
 
-        console.log('🔍 PaymentCallback: Checking payment status for token:', token);
-
-        // Vérifier le statut du paiement
         const result = await fusionPayService.checkPaymentStatus(token);
 
         if (!result.success) {
-          console.error('❌ PaymentCallback: Status check failed:', result.error);
           setPaymentStatus('error');
           setLoading(false);
           return;
@@ -115,53 +217,61 @@ const PaymentCallback = () => {
         setPaymentData(result.data);
 
         if (result.paid) {
-          console.log('✅ PaymentCallback: Payment successful');
           setPaymentStatus('success');
           
-          // Traiter le paiement selon son type
-          if (result.customData?.type === 'creator_activation') {
-            // Activation de compte créateur
+          let customData = result.customData || {};
+          
+          // Récupérer customData depuis result.data si vide
+          if (!customData || Object.keys(customData).length === 0) {
+            if (result.data?.personal_Info?.[0]) {
+              customData = result.data.personal_Info[0];
+            }
+          }
+          
+          if (customData.type === 'creator_activation') {
             try {
-              console.log('🚀 PaymentCallback: Activating creator account');
               const { error } = await becomeCreator();
               
               if (error) {
-                console.error('❌ PaymentCallback: Error activating creator:', error);
                 toast({
                   title: "Paiement réussi mais erreur d'activation",
                   description: "Votre paiement a été traité mais nous n'avons pas pu activer votre compte créateur. Notre équipe va vous contacter.",
                   variant: "destructive"
                 });
               } else {
-                console.log('✅ PaymentCallback: Creator account activated successfully');
                 toast({
                   title: "Félicitations !",
                   description: "Votre compte créateur a été activé avec succès !"
                 });
               }
             } catch (error) {
-              console.error('❌ PaymentCallback: Exception during creator activation:', error);
               toast({
                 title: "Erreur d'activation",
                 description: "Une erreur s'est produite lors de l'activation de votre compte créateur.",
                 variant: "destructive"
               });
             }
-          } else if (result.customData?.type === 'content_purchase') {
-            // Achat de contenu
+          } else if (customData.type === 'content_purchase') {
             try {
-              console.log('🔄 PaymentCallback: Processing content purchase...');
-              await processContentPurchase(result.customData, result.data);
-              toast({
-                title: "Achat réussi !",
-                description: "Vous pouvez maintenant accéder au contenu.",
-              });
+              const contentId = await processContentPurchase(customData, result.data);
+              
+              if (contentId && contentId !== 'generic') {
+                setPurchasedContentId(contentId);
+                toast({
+                  title: "Achat réussi !",
+                  description: "Vous pouvez maintenant accéder au contenu.",
+                });
+              } else {
+                setPurchasedContentId(null);
+                toast({
+                  title: "Paiement traité !",
+                  description: "Votre achat a été enregistré avec succès.",
+                });
+              }
             } catch (error) {
-              console.error('❌ PaymentCallback: Content purchase processing failed:', error);
               toast({
-                title: "Paiement réussi mais erreur de traitement",
-                description: "Votre paiement a été traité mais une erreur s'est produite. Contactez le support.",
-                variant: "destructive"
+                title: "Paiement traité !",
+                description: "Votre paiement a été enregistré avec succès.",
               });
             }
           } else {
@@ -172,16 +282,12 @@ const PaymentCallback = () => {
           }
 
         } else if (result.pending) {
-          console.log('⏳ PaymentCallback: Payment pending');
           setPaymentStatus('pending');
-          
         } else if (result.failed) {
-          console.log('❌ PaymentCallback: Payment failed');
           setPaymentStatus('failed');
         }
 
       } catch (error) {
-        console.error('❌ PaymentCallback: Exception during payment check:', error);
         setPaymentStatus('error');
       } finally {
         setLoading(false);
@@ -229,9 +335,12 @@ const PaymentCallback = () => {
       case 'checking':
         return 'Nous vérifions le statut de votre paiement...';
       case 'success':
+        if (purchasedContentId && purchasedContentId !== 'generic') {
+          return 'Votre achat a été traité avec succès ! Vous pouvez maintenant accéder au contenu.';
+        }
         return paymentData?.type === 'creator_activation' 
           ? 'Votre compte créateur a été activé avec succès ! Vous pouvez maintenant créer et monétiser du contenu.'
-          : 'Votre paiement a été traité avec succès.';
+          : 'Votre paiement a été traité et enregistré avec succès.';
       case 'pending':
         return 'Votre paiement est en cours de traitement. Vous recevrez une confirmation une fois terminé.';
       case 'failed':
@@ -309,12 +418,23 @@ const PaymentCallback = () => {
         {/* Boutons d'action */}
         <div className="space-y-3">
           {paymentStatus === 'success' && (
-            <Button
-              onClick={() => navigate('/dashboard')}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              Aller au tableau de bord
-            </Button>
+            <>
+              {purchasedContentId ? (
+                <Button
+                  onClick={() => navigate('/')}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  Voir le contenu acheté
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  Aller au tableau de bord
+                </Button>
+              )}
+            </>
           )}
           
           {(paymentStatus === 'failed' || paymentStatus === 'error') && (

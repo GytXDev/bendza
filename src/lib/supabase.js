@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     storageKey: 'bendza-auth-token',
     flowType: 'pkce',
-    debug: process.env.NODE_ENV === 'development'
+    debug: false // Désactiver les logs de debug
   }
 })
 

@@ -18,9 +18,6 @@ const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { user } = useAuth();
   
-  // Debug log pour vérifier le rôle
-  console.log('🔍 Sidebar: User data:', user);
-  console.log('👑 Sidebar: User role:', user?.role);
 
   const menuItems = [
     { icon: Home, label: 'Accueil', path: '/' },

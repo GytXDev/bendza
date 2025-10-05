@@ -82,7 +82,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
     setLoading(true);
 
     try {
-      console.log('🚀 PaymentModal: Initiating FusionPay payment');
+      console.log('PaymentModal: Initiating FusionPay payment');
 
       const clientName = user.name || user.email.split('@')[0];
       const userId = user.id;
@@ -101,7 +101,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
       const result = await fusionPayService.initiateCreatorPayment(paymentData);
 
       if (result.success && result.paymentUrl) {
-        console.log('✅ PaymentModal: Payment initiated, redirecting to:', result.paymentUrl);
+        console.log('PaymentModal: Payment initiated, redirecting to:', result.paymentUrl);
         toast({
           title: "Redirection vers le paiement",
           description: "Vous allez être redirigé vers la page de paiement Mobile Money"

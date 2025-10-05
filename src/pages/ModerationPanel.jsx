@@ -77,12 +77,20 @@ function ModerationPanel() {
     // Approuver un contenu
     const approveContent = async (contentId) => {
         try {
-            const { error } = await supabase.rpc('approve_content', {
+            const { data, error } = await supabase.rpc('approve_content', {
                 p_content_id: contentId,
                 p_admin_id: user.id
             });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erreur RPC:', error);
+                throw error;
+            }
+
+            // Vérifier la réponse de la fonction RPC
+            if (data && !data.success) {
+                throw new Error(data.error || 'Erreur lors de l\'approbation');
+            }
 
             toast({
                 title: "Contenu approuvé",
@@ -95,7 +103,7 @@ function ModerationPanel() {
             console.error('Erreur lors de l\'approbation:', error);
             toast({
                 title: "Erreur",
-                description: "Impossible d'approuver le contenu",
+                description: error.message || "Impossible d'approuver le contenu",
                 variant: "destructive"
             });
         }
@@ -113,13 +121,22 @@ function ModerationPanel() {
         }
 
         try {
-            // Supprimer complètement le contenu de la plateforme
-            const { error: deleteError } = await supabase
-                .from('content')
-                .delete()
-                .eq('id', contentId);
+            // Utiliser la fonction RPC pour rejeter le contenu
+            const { data, error } = await supabase.rpc('reject_content', {
+                p_content_id: contentId,
+                p_admin_id: user.id,
+                p_reason: rejectionReason
+            });
 
-            if (deleteError) throw deleteError;
+            if (error) {
+                console.error('Erreur RPC:', error);
+                throw error;
+            }
+
+            // Vérifier la réponse de la fonction RPC
+            if (data && !data.success) {
+                throw new Error(data.error || 'Erreur lors du rejet');
+            }
 
             // Créer une notification pour le créateur
             const contentItem = pendingContent.find(c => c.id === contentId);
@@ -128,14 +145,10 @@ function ModerationPanel() {
                     .from('notifications')
                     .insert({
                         user_id: contentItem.creator_id,
-                        type: 'content_rejected',
+                        type: 'error', // Utiliser un type existant
                         title: 'Contenu rejeté',
                         message: `Votre contenu "${contentItem.title || 'Sans titre'}" a été rejeté. Raison: ${rejectionReason}`,
-                        data: {
-                            content_id: contentId,
-                            rejection_reason: rejectionReason,
-                            admin_id: user.id
-                        }
+                        action_url: null
                     });
             }
 
@@ -268,19 +281,17 @@ function ModerationPanel() {
                                     {/* Aperçu du média */}
                                     <div className="mb-3 md:mb-4">
                                         {/* Debug logs */}
-                                        {console.log('🎬 ModerationPanel: Media debug:', {
+                                        {console.log('ModerationPanel: Media debug:', {
                                             id: item.id,
                                             type: item.type,
                                             url: item.url,
-                                            thumbnail_url: item.thumbnail_url,
                                             title: item.title,
-                                            url_length: item.url?.length || 0,
-                                            thumbnail_length: item.thumbnail_url?.length || 0
+                                            url_length: item.url?.length || 0
                                         })}
                                         
                                         {item.type === 'image' && (
                                             <img 
-                                                src={item.url || item.thumbnail_url} 
+                                                src={item.url} 
                                                 alt={item.title}
                                                 className="w-full max-w-sm md:max-w-xs max-h-32 md:max-h-48 object-cover rounded-lg"
                                             />
@@ -290,12 +301,12 @@ function ModerationPanel() {
                                                 {item.url ? (
                                                     <video 
                                                         src={item.url}
-                                                        poster={item.thumbnail_url}
+                                                        poster={item.url}
                                                         controls
                                                         preload="metadata"
                                                         className="w-full max-w-sm md:max-w-xs max-h-32 md:max-h-48 rounded-lg bg-black"
-                                                        onLoadStart={() => console.log('🎬 Video load started:', item.url)}
-                                                        onLoadedData={() => console.log('✅ Video data loaded:', item.url)}
+                                                        onLoadStart={() => console.log('Video load started:', item.url)}
+                                                        onLoadedData={() => console.log('Video data loaded:', item.url)}
                                                         onError={(e) => {
                                                             console.error('❌ Video load error:', {
                                                                 url: item.url,

@@ -25,7 +25,7 @@ class FusionPayService {
    */
   async initiateCreatorPayment(paymentData) {
     try {
-      console.log('🚀 FusionPay: Initiating payment:', paymentData);
+      console.log('FusionPay: Initiating payment:', paymentData);
 
       // Déterminer le type d'article selon le type de paiement
       let articleName = "Activation compte créateur";
@@ -52,8 +52,8 @@ class FusionPayService {
       // Effectuer le paiement
       const response = await this.fusionPay.makePayment();
       
-      console.log('✅ FusionPay: Payment initiated successfully:', response);
-      console.log('🔍 FusionPay: Response structure:', {
+      console.log('FusionPay: Payment initiated successfully:', response);
+      console.log('FusionPay: Response structure:', {
         url: response?.url,
         token: response?.token,
         message: response?.message,
@@ -86,11 +86,11 @@ class FusionPayService {
    */
   async checkPaymentStatus(token) {
     try {
-      console.log('🔍 FusionPay: Checking payment status for token:', token);
+      console.log('FusionPay: Checking payment status for token:', token);
 
       const status = await this.fusionPay.checkPaymentStatus(token);
       
-      console.log('📊 FusionPay: Payment status:', status);
+      console.log('FusionPay: Payment status:', status);
 
       if (status.statut && status.data.statut === "paid") {
         return {
@@ -128,7 +128,7 @@ class FusionPayService {
    * Redirige l'utilisateur vers la page de paiement
    */
   redirectToPayment(paymentUrl) {
-    console.log('🔄 FusionPay: Redirecting to payment URL:', paymentUrl);
+    console.log('FusionPay: Redirecting to payment URL:', paymentUrl);
     window.location.href = paymentUrl;
   }
 
@@ -139,10 +139,10 @@ class FusionPayService {
     try {
       const urlObj = new URL(url);
       const token = urlObj.searchParams.get('token');
-      console.log('🔑 FusionPay: Extracted token from URL:', token);
+      console.log('FusionPay: Extracted token from URL:', token);
       return token;
     } catch (error) {
-      console.error('❌ FusionPay: Error extracting token from URL:', error);
+      console.error('FusionPay: Error extracting token from URL:', error);
       return null;
     }
   }

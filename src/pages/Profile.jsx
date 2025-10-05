@@ -22,10 +22,7 @@ function Profile() {
   })
   const { toast } = useToast()
   
-  // Debug logs
-  console.log('👤 Profile: user data:', user);
-  console.log('👤 Profile: authLoading:', authLoading);
-  console.log('👤 Profile: formData:', formData);
+
   
   // Loading state
   if (authLoading) {
@@ -68,7 +65,6 @@ function Profile() {
   // Réinitialiser justUploaded quand l'AuthContext se met à jour avec la nouvelle photo
   React.useEffect(() => {
     if (justUploaded && user?.photourl && formData.photourl && user.photourl === formData.photourl) {
-      console.log('🔄 Profile: AuthContext updated with new photo, resetting justUploaded flag');
       setJustUploaded(false);
     }
   }, [user?.photourl, formData.photourl, justUploaded]);
@@ -95,20 +91,18 @@ function Profile() {
       )
 
       // Mise à jour du profil avec la nouvelle URL d'image
-      console.log('🖼️ Profile: Updating profile with new photo URL:', uploadResult.url);
       const { error } = await updateProfile({
         photourl: uploadResult.url
       })
 
       if (error) {
-        console.error('❌ Profile: Error updating profile:', error);
+        console.error('Profile: Error updating profile:', error);
         toast({
           title: "Erreur",
           description: "Impossible de mettre à jour la photo de profil",
           variant: "destructive"
         })
       } else {
-        console.log('✅ Profile: Profile updated successfully');
         // Mise à jour du state local
         setFormData(prev => ({
           ...prev,
@@ -124,7 +118,6 @@ function Profile() {
         })
         
         // Forcer un re-render pour afficher la nouvelle image
-        console.log('🖼️ Profile: New photo URL set:', uploadResult.url);
       }
     } catch (error) {
       console.error('Erreur upload image:', error)
