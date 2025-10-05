@@ -89,23 +89,16 @@ function HomePage() {
                 .limit(20);
 
             if (contentError) {
-                console.error('❌ HomePage: Error loading content:', contentError);
-                console.error('❌ HomePage: Content error details:', {
-                    message: contentError.message,
-                    details: contentError.details,
-                    hint: contentError.hint,
-                    code: contentError.code
-                });
+                console.error('Error loading content:', contentError);
                 setContent([]);
                 
                 // Afficher un message d'erreur plus informatif
                 toast({
                     title: "Erreur de chargement",
-                    description: `Impossible de charger le contenu: ${contentError.message}`,
+                    description: "Impossible de charger le contenu. Vérifiez votre connexion internet.",
                     variant: "destructive"
                 });
             } else {
-                console.log('✅ HomePage: Content loaded successfully:', contentData?.length || 0, 'items');
                 setContent(contentData || []);
             }
 
@@ -120,19 +113,14 @@ function HomePage() {
                     if (!purchasesError) {
                         const purchasedIds = new Set(purchases?.map(p => p.content_id) || []);
                         setPurchasedContent(purchasedIds);
-                        console.log('✅ HomePage: Purchases loaded:', purchasedIds.size, 'items');
-                    } else {
-                        console.error('❌ HomePage: Error loading purchases:', purchasesError);
                     }
                 } catch (error) {
-                    console.error('❌ HomePage: Error loading purchases:', error);
+                    console.error('Error loading purchases:', error);
                     // Erreur silencieuse pour les achats
                 }
-            } else {
-                console.log('ℹ️ HomePage: User not connected, skipping purchases loading');
             }
         } catch (error) {
-            console.error('❌ HomePage: Error in loadData:', error);
+            console.error('Error in loadData:', error);
             setContent([]);
             toast({
                 title: "Erreur de chargement",
