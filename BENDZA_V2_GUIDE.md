@@ -1,12 +1,12 @@
-# 🚀 BENDZA V2 - Guide d'Installation et d'Utilisation
+# BENDZA V2 - Guide d'Installation et d'Utilisation
 
-## 📋 Vue d'Ensemble des Améliorations
+## Vue d'Ensemble des Améliorations
 
 Bendza V2 apporte des améliorations significatives avec une ergonomie inspirée de Twitter, un système de modération complet, et des fonctionnalités de paiement uniques.
 
-### ✨ Nouvelles Fonctionnalités
+### Nouvelles Fonctionnalités
 
-**🎨 Interface Améliorée :**
+**Interface Améliorée :**
 
 - Design Twitter-like plus fluide et espacé
 - Cards épurées avec header, contenu et footer
@@ -14,26 +14,26 @@ Bendza V2 apporte des améliorations significatives avec une ergonomie inspirée
 - Contrôles de lecture manuels
 - Suppression des options de téléchargement
 
-**💰 Système de Paiement Unique :**
+**Système de Paiement Unique :**
 
 - Paiement unique par visionnage de contenu
 - Créateurs peuvent voir leurs propres contenus gratuitement
 - Intégration avec le système de vues existant
 
-**🛡️ Système de Modération :**
+**Système de Modération :**
 
 - Statut "en attente" pour tous les nouveaux contenus
 - Panneau de modération pour les administrateurs
 - Approbation/rejet avec notifications automatiques
 - Rôles utilisateur (user, creator, admin)
 
-**🔔 Système de Notifications :**
+**Système de Notifications :**
 
 - Notifications pour approbation/rejet de contenu
 - Notifications pour nouveaux paiements
 - Interface de notifications intégrée
 
-## 🛠️ Installation
+## Installation
 
 ### 1. Mise à Jour du Schéma de Base de Données
 
@@ -59,18 +59,18 @@ WHERE email = 'votre-email@admin.com';
 \i database/test_user_permissions.sql
 ```
 
-## 🎯 Utilisation
+## Utilisation
 
 ### Pour les Utilisateurs
 
-**📱 Navigation :**
+**Navigation :**
 
 - Interface plus fluide et intuitive
 - Auto-play des vidéos au scroll
 - Contrôles de lecture manuels
 - Paiement unique par contenu
 
-**💳 Paiement :**
+**Paiement :**
 
 - Un clic pour débloquer un contenu
 - Paiement unique (pas de re-abonnement)
@@ -78,13 +78,13 @@ WHERE email = 'votre-email@admin.com';
 
 ### Pour les Créateurs
 
-**📝 Publication :**
+**Publication :**
 
 - Les contenus passent en statut "en attente"
 - Notification automatique lors de l'approbation/rejet
 - Accès gratuit à leurs propres contenus
 
-**📊 Tableau de Bord :**
+**Tableau de Bord :**
 
 - Voir les statistiques de vues
 - Gérer les contenus publiés
@@ -92,7 +92,7 @@ WHERE email = 'votre-email@admin.com';
 
 ### Pour les Administrateurs
 
-**🛡️ Modération :**
+**Modération :**
 
 - Accès au panneau `/moderation`
 - Voir tous les contenus en attente
@@ -105,7 +105,7 @@ WHERE email = 'votre-email@admin.com';
 - Accès aux statistiques complètes
 - Gestion des utilisateurs et rôles
 
-## 🔧 Configuration
+## Configuration
 
 ### Variables d'Environnement
 
@@ -136,7 +136,7 @@ FUSIONPAY_API_URL=your_fusionpay_url
 'rejected'  -- Rejeté par la modération
 ```
 
-## 📊 Structure des Données
+## Structure des Données
 
 ### Nouvelles Tables
 
@@ -165,7 +165,7 @@ FUSIONPAY_API_URL=your_fusionpay_url
 - `moderated_at` : Date de modération
 - `rejection_reason` : Raison du rejet
 
-## 🚀 Fonctionnalités Avancées
+## Fonctionnalités Avancées
 
 ### Auto-Play des Vidéos
 
@@ -191,7 +191,7 @@ SELECT approve_content('content_id', 'admin_id');
 SELECT reject_content('content_id', 'admin_id', 'reason');
 ```
 
-## 🔒 Sécurité
+## Sécurité
 
 ### Politiques RLS
 
@@ -205,7 +205,7 @@ SELECT reject_content('content_id', 'admin_id', 'reason');
 - Les créateurs ne peuvent pas modifier le statut
 - Les utilisateurs ne peuvent pas voir les contenus en attente
 
-## 🐛 Dépannage
+## Dépannage
 
 ### Problèmes Courants
 
@@ -235,7 +235,7 @@ SELECT * FROM notifications WHERE user_id = 'user_id';
 
 ```
 
-## 📈 Performance
+## Performance
 
 ### Optimisations
 
@@ -252,7 +252,7 @@ SELECT COUNT(*) FROM content WHERE status = 'pending';
 SELECT COUNT(*) FROM notifications WHERE is_read = false;
 ```
 
-## 🎉 Conclusion
+## Conclusion
 
 Bendza V2 offre une expérience utilisateur améliorée avec :
 

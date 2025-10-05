@@ -73,7 +73,7 @@ class FusionPayService {
       };
 
     } catch (error) {
-      console.error('❌ FusionPay: Payment initiation failed:', error);
+      console.error('FusionPay: Payment initiation failed:', error);
       return {
         success: false,
         error: error.message || 'Erreur lors de l\'initiation du paiement'
@@ -116,7 +116,7 @@ class FusionPayService {
       }
 
     } catch (error) {
-      console.error('❌ FusionPay: Status check failed:', error);
+      console.error('FusionPay: Status check failed:', error);
       return {
         success: false,
         error: error.message || 'Erreur lors de la vérification du paiement'

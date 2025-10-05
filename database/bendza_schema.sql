@@ -115,3 +115,155 @@ CREATE TABLE public.views (
   CONSTRAINT views_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT views_content_id_fkey FOREIGN KEY (content_id) REFERENCES public.content(id)
 );
+
+-- Fonction pour supprimer complètement un contenu et toutes ses dépendances
+CREATE OR REPLACE FUNCTION delete_content_cascade(content_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    result JSON;
+    deleted_purchases INTEGER := 0;
+    deleted_transactions INTEGER := 0;
+    deleted_media INTEGER := 0;
+    deleted_views INTEGER := 0;
+    deleted_content BOOLEAN := false;
+    has_transactions INTEGER := 0;
+    has_purchases INTEGER := 0;
+BEGIN
+    -- Initialiser le résultat
+    result := json_build_object(
+        'success', false,
+        'content_id', content_id,
+        'deleted_purchases', 0,
+        'deleted_transactions', 0,
+        'deleted_media', 0,
+        'deleted_views', 0,
+        'deleted_content', false,
+        'error', null
+    );
+
+    -- Vérifier que le contenu existe
+    IF NOT EXISTS (SELECT 1 FROM public.content WHERE id = content_id) THEN
+        result := json_build_object(
+            'success', false,
+            'content_id', content_id,
+            'error', 'Contenu non trouvé'
+        );
+        RETURN result;
+    END IF;
+
+    -- Vérifier s'il y a des transactions liées à ce contenu
+    SELECT COUNT(*) INTO has_transactions
+    FROM public.transactions 
+    WHERE content_id = delete_content_cascade.content_id;
+
+    -- Vérifier s'il y a des purchases liées à ce contenu
+    SELECT COUNT(*) INTO has_purchases
+    FROM public.purchases 
+    WHERE content_id = delete_content_cascade.content_id;
+
+    -- Si le contenu a des transactions ou des purchases, refuser la suppression
+    IF has_transactions > 0 OR has_purchases > 0 THEN
+        result := json_build_object(
+            'success', false,
+            'content_id', content_id,
+            'error', 'Impossible de supprimer le contenu car il contient des transactions ou des achats actifs',
+            'has_transactions', has_transactions,
+            'has_purchases', has_purchases,
+            'blocked', true
+        );
+        RETURN result;
+    END IF;
+
+    BEGIN
+        -- 1. Supprimer d'abord les achats (ils référencent les transactions)
+        DELETE FROM public.purchases 
+        WHERE content_id = delete_content_cascade.content_id;
+        
+        GET DIAGNOSTICS deleted_purchases = ROW_COUNT;
+        
+        -- 2. Supprimer les transactions
+        DELETE FROM public.transactions 
+        WHERE content_id = delete_content_cascade.content_id;
+        
+        GET DIAGNOSTICS deleted_transactions = ROW_COUNT;
+        
+        -- 3. Supprimer les médias multiples
+        DELETE FROM public.content_media 
+        WHERE content_id = delete_content_cascade.content_id;
+        
+        GET DIAGNOSTICS deleted_media = ROW_COUNT;
+        
+        -- 4. Supprimer les vues
+        DELETE FROM public.views 
+        WHERE content_id = delete_content_cascade.content_id;
+        
+        GET DIAGNOSTICS deleted_views = ROW_COUNT;
+        
+        -- 5. Supprimer le contenu principal
+        DELETE FROM public.content 
+        WHERE id = delete_content_cascade.content_id;
+        
+        GET DIAGNOSTICS deleted_content = ROW_COUNT;
+        deleted_content := (deleted_content > 0);
+        
+        -- Construire le résultat de succès
+        result := json_build_object(
+            'success', true,
+            'content_id', content_id,
+            'deleted_purchases', deleted_purchases,
+            'deleted_transactions', deleted_transactions,
+            'deleted_media', deleted_media,
+            'deleted_views', deleted_views,
+            'deleted_content', deleted_content,
+            'error', null
+        );
+        
+    EXCEPTION WHEN OTHERS THEN
+        -- En cas d'erreur, marquer le contenu comme rejeté (soft delete)
+        BEGIN
+            UPDATE public.content 
+            SET 
+                status = 'rejected',
+                is_published = false,
+                updated_at = NOW()
+            WHERE id = delete_content_cascade.content_id;
+            
+            -- Construire le résultat avec soft delete
+            result := json_build_object(
+                'success', true,
+                'content_id', content_id,
+                'deleted_purchases', deleted_purchases,
+                'deleted_transactions', deleted_transactions,
+                'deleted_media', deleted_media,
+                'deleted_views', deleted_views,
+                'deleted_content', false,
+                'soft_deleted', true,
+                'error', SQLERRM
+            );
+            
+        EXCEPTION WHEN OTHERS THEN
+            -- Si même le soft delete échoue, retourner l'erreur
+            result := json_build_object(
+                'success', false,
+                'content_id', content_id,
+                'deleted_purchases', deleted_purchases,
+                'deleted_transactions', deleted_transactions,
+                'deleted_media', deleted_media,
+                'deleted_views', deleted_views,
+                'deleted_content', false,
+                'error', SQLERRM
+            );
+        END;
+    END;
+    
+    RETURN result;
+END;
+$$;
+
+-- Permissions pour la fonction de suppression
+GRANT EXECUTE ON FUNCTION delete_content_cascade(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION delete_content_cascade(UUID) TO service_role;

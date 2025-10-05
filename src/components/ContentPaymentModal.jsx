@@ -99,7 +99,7 @@ const ContentPaymentModal = ({
 
       // Vérifier que contentId est valide avant de le stocker
       if (!contentId || contentId === 'undefined' || contentId === 'null') {
-        console.error('❌ ContentPaymentModal: Invalid contentId:', contentId);
+        console.error('ContentPaymentModal: Invalid contentId:', contentId);
         toast({
           title: "Erreur de paiement",
           description: "Identifiant du contenu manquant",
@@ -118,7 +118,7 @@ const ContentPaymentModal = ({
           .single();
 
         if (contentError || !contentData) {
-          console.error('❌ ContentPaymentModal: Contenu non trouvé:', contentError);
+          console.error('ContentPaymentModal: Contenu non trouvé:', contentError);
           toast({
             title: "Contenu introuvable",
             description: "Le contenu que vous essayez d'acheter n'existe plus",
@@ -128,7 +128,7 @@ const ContentPaymentModal = ({
         }
 
         if (!contentData.creator_id) {
-          console.error('❌ ContentPaymentModal: Creator ID manquant:', contentData);
+          console.error(' ContentPaymentModal: Creator ID manquant:', contentData);
           toast({
             title: "Erreur de contenu",
             description: "Ce contenu n'a pas de créateur associé",
@@ -138,7 +138,7 @@ const ContentPaymentModal = ({
         }
 
         if (contentData.status !== 'approved' || !contentData.is_published) {
-          console.error('❌ ContentPaymentModal: Contenu non approuvé:', contentData);
+          console.error('ContentPaymentModal: Contenu non approuvé:', contentData);
           toast({
             title: "Contenu non disponible",
             description: "Ce contenu n'est pas encore approuvé ou publié",
@@ -156,7 +156,7 @@ const ContentPaymentModal = ({
         });
 
       } catch (error) {
-        console.error('❌ ContentPaymentModal: Erreur lors de la vérification du contenu:', error);
+        console.error('ContentPaymentModal: Erreur lors de la vérification du contenu:', error);
         toast({
           title: "Erreur de vérification",
           description: "Impossible de vérifier le contenu",
@@ -200,7 +200,7 @@ const ContentPaymentModal = ({
           fusionPayService.redirectToPayment(result.paymentUrl);
         }, 1000);
       } else {
-        console.error('❌ ContentPaymentModal: Payment initiation failed:', result);
+        console.error(' ContentPaymentModal: Payment initiation failed:', result);
         toast({
           title: "Erreur de paiement",
           description: result.error || "Impossible d'initier le paiement. URL de paiement manquante.",
@@ -208,7 +208,7 @@ const ContentPaymentModal = ({
         });
       }
     } catch (error) {
-      console.error('❌ ContentPaymentModal: Payment error:', error);
+      console.error(' ContentPaymentModal: Payment error:', error);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite",
@@ -228,8 +228,14 @@ const ContentPaymentModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700">
+      <DialogContent 
+        className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700"
+        aria-describedby="content-payment-description"
+      >
         <DialogHeader>
+          <p id="content-payment-description" className="sr-only">
+            Modal de paiement pour accéder au contenu premium
+          </p>
           <DialogTitle className="text-2xl font-bold text-orange-500">
             Paiement Mobile Money
           </DialogTitle>

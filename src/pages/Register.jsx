@@ -5,7 +5,8 @@ import { Helmet } from 'react-helmet'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { useToast } from '../components/ui/use-toast'
-import { Chrome, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import GoogleIcon from '../components/icons/GoogleIcon'
 
 function Register() {
   const [loading, setLoading] = React.useState(false)
@@ -110,7 +111,7 @@ function Register() {
               disabled={loading}
               className="w-full bg-white text-black hover:bg-gray-100 font-semibold py-6 text-lg mb-6"
             >
-              <Chrome className="w-6 h-6 mr-3" />
+              <GoogleIcon className="w-6 h-6 mr-3" />
               {loading ? 'Inscription...' : 'S\'inscrire avec Google'}
             </Button>
 

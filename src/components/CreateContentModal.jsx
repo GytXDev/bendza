@@ -177,15 +177,6 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       return;
     }
 
-    if (formData.price > 0 && formData.price < 100) {
-      toast({
-        title: "Erreur",
-        description: "Le prix doit être d'au moins 100 FCFA ou 0 pour un contenu gratuit",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!multipleMediaMode && !selectedFile) {
       toast({
         title: "Erreur",
@@ -266,8 +257,14 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       }
       onClose();
     }}>
-      <DialogContent className="sm:max-w-4xl max-h-[95vh] overflow-y-auto">
+      <DialogContent 
+        className="sm:max-w-4xl max-h-[95vh] overflow-y-auto"
+        aria-describedby="create-content-description"
+      >
         <DialogHeader>
+          <p id="create-content-description" className="sr-only">
+            Créer un nouveau contenu avec titre, description, prix et fichier média
+          </p>
           <DialogTitle className="flex items-center space-x-2">
             <Plus className="text-orange-500" size={24} />
             <span>Créer du contenu</span>
@@ -275,7 +272,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Option médias multiples */}
+          {/* Option médias multiples
           <div className="flex items-center space-x-3 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
             <input
               type="checkbox"
@@ -293,7 +290,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
             <label htmlFor="multiple-media" className="text-sm text-gray-300 cursor-pointer">
               Créer un contenu avec plusieurs médias (images/vidéos)
             </label>
-          </div>
+          </div> */}
 
           {/* Zone de drag & drop ou médias multiples */}
           <div className="space-y-6">
@@ -473,7 +470,7 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
                 {formData.price === 0 ? (
                   <span className="text-blue-400">Contenu gratuit - visible par tous</span>
                 ) : (
-                  <span>Prix minimum: 100 FCFA (ou 0 pour gratuit)</span>
+                  <span>Prix libre - 0 FCFA pour un contenu gratuit</span>
                 )}
               </p>
             </div>

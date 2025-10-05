@@ -112,9 +112,20 @@ function Profile() {
         // Marquer qu'on vient de faire un upload pour éviter que le useEffect écrase
         setJustUploaded(true)
 
+        // Message de succès avec information sur la suppression
+        let description = "Votre photo de profil a été mise à jour avec succès"
+        if (uploadResult.deletionResult) {
+          if (uploadResult.deletionResult.success) {
+            description += " • Ancienne photo supprimée"
+          } else {
+            description += " • Ancienne photo conservée (erreur de suppression)"
+            console.warn('Ancienne photo non supprimée:', uploadResult.deletionResult.error)
+          }
+        }
+
         toast({
           title: "Photo mise à jour",
-          description: "Votre photo de profil a été mise à jour avec succès"
+          description: description
         })
         
         // Forcer un re-render pour afficher la nouvelle image

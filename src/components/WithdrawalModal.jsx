@@ -123,8 +123,14 @@ const WithdrawalModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-[425px] max-h-[90vh] bg-gray-900 text-white border-gray-700 overflow-hidden flex flex-col">
+      <DialogContent 
+        className="w-[95vw] max-w-[425px] max-h-[90vh] bg-gray-900 text-white border-gray-700 overflow-hidden flex flex-col"
+        aria-describedby="withdrawal-description"
+      >
         <DialogHeader className="flex-shrink-0">
+          <p id="withdrawal-description" className="sr-only">
+            Modal de retrait de fonds pour créateurs
+          </p>
           <DialogTitle className="text-xl sm:text-2xl font-bold text-orange-500">
             {editMode ? 'Modifier' : 'Demande de retrait'}
           </DialogTitle>

@@ -161,11 +161,11 @@ function AdminWithdrawals() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'processing': return <RefreshCw className="w-4 h-4 text-blue-500" />;
-      case 'completed': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'rejected': return <XCircle className="w-4 h-4 text-red-500" />;
-      default: return <Clock className="w-4 h-4 text-gray-500" />;
+      case 'pending': return <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />;
+      case 'processing': return <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" />;
+      case 'completed': return <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />;
+      case 'rejected': return <XCircle className="w-3 h-3 sm:w-4 sm:h-4 text-red-500" />;
+      default: return <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />;
     }
   };
 
@@ -213,7 +213,7 @@ function AdminWithdrawals() {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-white text-xl">Chargement des retraits...</div>
+          <div className="text-white text-lg sm:text-xl">Chargement des retraits...</div>
         </div>
       </div>
     );
@@ -226,16 +226,17 @@ function AdminWithdrawals() {
         <meta name="description" content="Gérer les demandes de retrait des créateurs" />
       </Helmet>
 
-      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8 mt-16 md:mt-0">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-16 md:mt-0">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 md:mb-8 space-y-4 md:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Administration des Retraits</h1>
-            <p className="text-gray-400 text-sm md:text-base">Gérer les demandes de retrait des créateurs</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Administration des Retraits</h1>
+            <p className="text-gray-400 text-sm sm:text-base">Gérer les demandes de retrait des créateurs</p>
           </div>
           <Button
             onClick={fetchWithdrawals}
-            className="bg-orange-500 hover:bg-orange-600 text-white w-full md:w-auto"
+            className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto text-sm sm:text-base"
+            size="sm"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualiser
@@ -243,28 +244,34 @@ function AdminWithdrawals() {
         </div>
 
         {/* Filtres */}
-        <div className="bg-gray-900 rounded-xl p-4 md:p-6 mb-6 border border-gray-700">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 lg:mb-10 border border-gray-700 shadow-lg">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
             {/* Recherche */}
             <div className="flex-1">
+              <label className="block text-sm sm:text-base font-medium text-gray-300 mb-2 sm:mb-3">
+                Rechercher
+              </label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                 <input
                   type="text"
-                  placeholder="Rechercher par nom, email, téléphone..."
+                  placeholder="Nom, email, téléphone, ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm md:text-base"
+                  className="w-full pl-10 sm:pl-12 lg:pl-14 pr-4 py-3 sm:py-4 bg-gray-800/50 border border-gray-600 rounded-lg sm:rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
                 />
               </div>
             </div>
 
             {/* Filtre par statut */}
-            <div className="w-full md:w-48">
+            <div className="lg:w-64 xl:w-72">
+              <label className="block text-sm sm:text-base font-medium text-gray-300 mb-2 sm:mb-3">
+                Statut
+              </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full p-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm md:text-base"
+                className="w-full p-3 sm:p-4 bg-gray-800/50 border border-gray-600 rounded-lg sm:rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
               >
                 <option value="all">Tous les statuts</option>
                 <option value="pending">En attente</option>
@@ -277,135 +284,156 @@ function AdminWithdrawals() {
         </div>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-          <div className="bg-gray-900 rounded-xl p-4 md:p-6 border border-gray-700">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8 lg:mb-10">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs md:text-sm">Total demandes</p>
-                <p className="text-lg md:text-2xl font-bold text-white">{withdrawals.length}</p>
+                <p className="text-gray-400 text-sm sm:text-base font-medium mb-2">Total demandes</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">{withdrawals.length}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Toutes les demandes</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-4 md:p-6 border border-gray-700">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs md:text-sm">En attente</p>
-                <p className="text-lg md:text-2xl font-bold text-yellow-400">
+                <p className="text-gray-400 text-sm sm:text-base font-medium mb-2">En attente</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-yellow-400 mb-1 sm:mb-2">
                   {withdrawals.filter(w => w.status === 'pending').length}
                 </p>
+                <p className="text-xs sm:text-sm text-gray-500">Nécessitent une action</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-4 md:p-6 border border-gray-700">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs md:text-sm">Terminées</p>
-                <p className="text-lg md:text-2xl font-bold text-green-400">
+                <p className="text-gray-400 text-sm sm:text-base font-medium mb-2">Terminées</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-400 mb-1 sm:mb-2">
                   {withdrawals.filter(w => w.status === 'completed').length}
                 </p>
+                <p className="text-xs sm:text-sm text-gray-500">Traitement terminé</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-4 md:p-6 border border-gray-700">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs md:text-sm">Montant total</p>
-                <p className="text-lg md:text-2xl font-bold text-white">
-                  {withdrawals.reduce((sum, w) => sum + w.amount, 0).toLocaleString()} <span className="text-sm md:text-lg">FCFA</span>
+                <p className="text-gray-400 text-sm sm:text-base font-medium mb-2">Montant total</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">
+                  {withdrawals.reduce((sum, w) => sum + w.amount, 0).toLocaleString()}
                 </p>
+                <p className="text-xs sm:text-sm text-gray-500">FCFA</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Liste des retraits */}
-        <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
-          <div className="p-4 md:p-6 border-b border-gray-700">
-            <h2 className="text-lg md:text-xl font-bold text-white">Demandes de Retrait</h2>
-            <p className="text-gray-400 text-xs md:text-sm">
-              {filteredWithdrawals.length} demande(s) trouvée(s)
-            </p>
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl border border-gray-700 shadow-lg overflow-hidden">
+          <div className="p-4 sm:p-6 lg:p-8 border-b border-gray-700 bg-gray-800/50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-3 sm:mb-0">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 sm:mb-2">Demandes de Retrait</h2>
+                <p className="text-gray-400 text-sm sm:text-base">
+                  {filteredWithdrawals.length} demande(s) trouvée(s)
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs sm:text-sm text-gray-400">En temps réel</span>
+              </div>
+            </div>
           </div>
 
           {/* Version mobile - Cartes */}
-          <div className="block md:hidden">
+          <div className="block lg:hidden">
             {filteredWithdrawals.map((withdrawal) => (
               <motion.div
                 key={withdrawal.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 border-b border-gray-700 last:border-b-0"
+                className="p-4 sm:p-6 border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/30 transition-colors"
               >
-                <div className="space-y-3">
+                <div className="space-y-3 sm:space-y-4">
                   {/* Header avec créateur et statut */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={withdrawal.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${withdrawal.users?.name}`}
-                        alt={withdrawal.users?.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="text-white font-medium text-sm">{withdrawal.users?.name}</p>
-                        <p className="text-gray-400 text-xs">{withdrawal.users?.email}</p>
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className="relative">
+                        <img
+                          src={withdrawal.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${withdrawal.users?.name}`}
+                          alt={withdrawal.users?.name}
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-gray-600"
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white font-semibold text-sm truncate">{withdrawal.users?.name}</p>
+                        <p className="text-gray-400 text-xs truncate">{withdrawal.users?.email}</p>
                       </div>
                     </div>
-                    <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full border ${getStatusColor(withdrawal.status)}`}>
+                    <div className={`inline-flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 sm:py-2 rounded-lg sm:rounded-xl border ${getStatusColor(withdrawal.status)} shadow-lg`}>
                       {getStatusIcon(withdrawal.status)}
-                      <span className="text-xs font-medium">{getStatusText(withdrawal.status)}</span>
+                      <span className="text-xs font-semibold whitespace-nowrap">{getStatusText(withdrawal.status)}</span>
                     </div>
                   </div>
 
                   {/* Montants */}
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <p className="text-gray-400 text-xs">Montant</p>
-                      <p className="text-white font-medium text-sm">{withdrawal.amount.toLocaleString()} FCFA</p>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="bg-gray-800/50 rounded-lg p-2 sm:p-3 text-center">
+                      <p className="text-gray-400 text-xs mb-1">Montant</p>
+                      <p className="text-white font-bold text-sm">{withdrawal.amount.toLocaleString()}</p>
+                      <p className="text-gray-400 text-xs">FCFA</p>
                     </div>
-                    <div>
-                      <p className="text-gray-400 text-xs">Frais</p>
-                      <p className="text-red-400 text-sm">{withdrawal.withdrawal_fee?.toLocaleString() || 0} FCFA</p>
+                    <div className="bg-red-500/10 rounded-lg p-2 sm:p-3 text-center border border-red-500/20">
+                      <p className="text-gray-400 text-xs mb-1">Frais</p>
+                      <p className="text-red-400 font-semibold text-sm">{withdrawal.withdrawal_fee?.toLocaleString() || 0}</p>
+                      <p className="text-gray-400 text-xs">FCFA</p>
                     </div>
-                    <div>
-                      <p className="text-gray-400 text-xs">Net</p>
-                      <p className="text-green-400 font-medium text-sm">{withdrawal.net_amount?.toLocaleString() || withdrawal.amount.toLocaleString()} FCFA</p>
+                    <div className="bg-green-500/10 rounded-lg p-2 sm:p-3 text-center border border-green-500/20">
+                      <p className="text-gray-400 text-xs mb-1">Net</p>
+                      <p className="text-green-400 font-bold text-sm">{withdrawal.net_amount?.toLocaleString() || withdrawal.amount.toLocaleString()}</p>
+                      <p className="text-gray-400 text-xs">FCFA</p>
                     </div>
                   </div>
 
                   {/* Contact et date */}
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{getCountryFlag(withdrawal.country)}</span>
-                      <span className="text-white">{withdrawal.phone_number}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div>
+                        <p className="text-white font-medium text-sm">{withdrawal.phone_number}</p>
+                      </div>
+                      <p className="text-gray-400 text-xs">{withdrawal.country}</p>
                     </div>
-                    <div className="flex items-center space-x-1 text-gray-400">
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDate(withdrawal.requested_at)}</span>
+                    <div className="flex items-center space-x-2 text-gray-400">
+                      <div>
+                        <p className="text-gray-300 text-xs font-medium">{formatDate(withdrawal.requested_at)}</p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Actions */}
                   {withdrawal.status === 'pending' && (
-                    <div className="flex space-x-2 pt-2">
+                    <div className="flex space-x-2 sm:space-x-3 pt-2">
                       <Button
                         size="sm"
                         onClick={() => handleStatusUpdate(withdrawal.id, 'completed')}
                         disabled={processingId === withdrawal.id}
-                        className="bg-green-500 hover:bg-green-600 text-white flex-1 text-xs"
+                        className="bg-green-500 hover:bg-green-600 text-white flex-1 text-xs rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                       >
-                        <CheckCircle className="w-3 h-3 mr-1" />
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         Approuver
                       </Button>
                       <Button
                         size="sm"
                         onClick={() => handleStatusUpdate(withdrawal.id, 'rejected')}
                         disabled={processingId === withdrawal.id}
-                        className="bg-red-500 hover:bg-red-600 text-white flex-1 text-xs"
+                        className="bg-red-500 hover:bg-red-600 text-white flex-1 text-xs rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                       >
-                        <XCircle className="w-3 h-3 mr-1" />
+                        <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         Rejeter
                       </Button>
                     </div>
@@ -416,9 +444,9 @@ function AdminWithdrawals() {
                         size="sm"
                         onClick={() => handleStatusUpdate(withdrawal.id, 'completed')}
                         disabled={processingId === withdrawal.id}
-                        className="bg-green-500 hover:bg-green-600 text-white w-full text-xs"
+                        className="bg-green-500 hover:bg-green-600 text-white w-full text-xs rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                       >
-                        <CheckCircle className="w-3 h-3 mr-1" />
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         Marquer comme terminé
                       </Button>
                     </div>
@@ -429,123 +457,168 @@ function AdminWithdrawals() {
           </div>
 
           {/* Version desktop - Tableau */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-800">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Créateur</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Montant</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Frais</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Net</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Contact</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Date</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Statut</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {filteredWithdrawals.map((withdrawal) => (
-                  <motion.tr
-                    key={withdrawal.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="hover:bg-gray-800/50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <img
-                          src={withdrawal.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${withdrawal.users?.name}`}
-                          alt={withdrawal.users?.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="text-white font-medium">{withdrawal.users?.name}</p>
-                          <p className="text-gray-400 text-sm">{withdrawal.users?.email}</p>
+          <div className="hidden lg:block relative">
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500">
+              <table className="w-full min-w-[1000px] xl:min-w-[1200px]">
+                <thead className="bg-gradient-to-r from-gray-800 to-gray-700">
+                  <tr>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[200px] xl:min-w-[250px] border-r border-gray-600">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <span>Créateur</span>
+                      </div>
+                    </th>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[120px] xl:min-w-[150px] border-r border-gray-600">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <span>Montant</span>
+                      </div>
+                    </th>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[100px] xl:min-w-[130px] border-r border-gray-600">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <span className="text-red-400 font-semibold">Frais</span>
+                      </div>
+                    </th>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[100px] xl:min-w-[130px] border-r border-gray-600">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <span className="text-green-400 font-semibold">Net</span>
+                      </div>
+                    </th>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[150px] xl:min-w-[180px] border-r border-gray-600">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <span>Contact</span>
+                      </div>
+                    </th>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[140px] xl:min-w-[170px] border-r border-gray-600">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <Calendar className="w-4 h-4 xl:w-5 xl:h-5" />
+                        <span>Date</span>
+                      </div>
+                    </th>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[120px] xl:min-w-[150px] border-r border-gray-600">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <Filter className="w-4 h-4 xl:w-5 xl:h-5" />
+                        <span>Statut</span>
+                      </div>
+                    </th>
+                    <th className="px-4 xl:px-6 py-4 text-left text-sm xl:text-base font-semibold text-gray-200 min-w-[140px] xl:min-w-[170px]">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <span>Actions</span>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {filteredWithdrawals.map((withdrawal) => (
+                    <motion.tr
+                      key={withdrawal.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="hover:bg-gray-800/50 transition-colors"
+                    >
+                      <td className="px-4 xl:px-6 py-4 min-w-[200px] xl:min-w-[250px] border-r border-gray-700/50">
+                        <div className="flex items-center space-x-3 xl:space-x-4">
+                          <div className="relative">
+                            <img
+                              src={withdrawal.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${withdrawal.users?.name}`}
+                              alt={withdrawal.users?.name}
+                              className="w-12 h-12 xl:w-16 xl:h-16 rounded-full object-cover border-2 border-gray-600"
+                            />
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 xl:w-5 xl:h-5 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white font-semibold text-sm xl:text-base truncate">{withdrawal.users?.name}</p>
+                            <p className="text-gray-400 text-xs xl:text-sm truncate mt-1">{withdrawal.users?.email}</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <p className="text-white font-medium">{withdrawal.amount.toLocaleString()} FCFA</p>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <p className="text-red-400">{withdrawal.withdrawal_fee?.toLocaleString() || 0} FCFA</p>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <p className="text-green-400 font-medium">{withdrawal.net_amount?.toLocaleString() || withdrawal.amount.toLocaleString()} FCFA</p>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{getCountryFlag(withdrawal.country)}</span>
-                        <div>
-                          <p className="text-white text-sm">{withdrawal.phone_number}</p>
-                          <p className="text-gray-400 text-xs">{withdrawal.country}</p>
+                      </td>
+                      
+                      <td className="px-4 xl:px-6 py-4 min-w-[120px] xl:min-w-[150px] border-r border-gray-700/50">
+                        <div className="bg-gray-800/50 rounded-lg xl:rounded-xl p-3 xl:p-4">
+                          <p className="text-white font-bold text-lg xl:text-xl">{withdrawal.amount.toLocaleString()} <span className="text-gray-400 text-xs xl:text-sm mt-1">FCFA</span></p>
                         </div>
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-300 text-sm">{formatDate(withdrawal.requested_at)}</span>
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full border ${getStatusColor(withdrawal.status)}`}>
-                        {getStatusIcon(withdrawal.status)}
-                        <span className="text-sm font-medium">{getStatusText(withdrawal.status)}</span>
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        {withdrawal.status === 'pending' && (
-                          <>
+                      </td>
+                      
+                      <td className="px-4 xl:px-6 py-4 min-w-[100px] xl:min-w-[130px] border-r border-gray-700/50">
+                        <div className="bg-red-500/10 rounded-lg xl:rounded-xl p-3 xl:p-4 border border-red-500/20">
+                          <p className="text-red-400 font-semibold text-base xl:text-lg">{withdrawal.withdrawal_fee?.toLocaleString() || 0} <span className="text-gray-400 text-xs xl:text-sm mt-1">FCFA</span></p>
+                        </div>
+                      </td>
+                      
+                      <td className="px-4 xl:px-6 py-4 min-w-[100px] xl:min-w-[130px] border-r border-gray-700/50">
+                        <div className="bg-green-500/10 rounded-lg xl:rounded-xl p-3 xl:p-4 border border-green-500/20">
+                          <p className="text-green-400 font-bold text-lg xl:text-xl">{withdrawal.net_amount?.toLocaleString() || withdrawal.amount.toLocaleString()} <span className="text-gray-400 text-xs xl:text-sm mt-1">FCFA</span></p>
+                        </div>
+                      </td>
+                      
+                      <td className="px-4 xl:px-6 py-4 min-w-[150px] xl:min-w-[180px] border-r border-gray-700/50">
+                        <div className="flex items-center space-x-3 xl:space-x-4">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white font-medium text-sm xl:text-base truncate">{withdrawal.phone_number}</p>
+                            <p className="text-gray-400 text-xs xl:text-sm mt-1">{withdrawal.country}</p>
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <td className="px-4 xl:px-6 py-4 min-w-[140px] xl:min-w-[170px] border-r border-gray-700/50">
+                        <div className="flex items-center space-x-2 xl:space-x-3">
+                          <div>
+                            <p className="text-gray-300 text-sm xl:text-base font-medium">{formatDate(withdrawal.requested_at)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <td className="px-4 xl:px-6 py-4 min-w-[120px] xl:min-w-[150px] border-r border-gray-700/50">
+                        <div className={`inline-flex items-center space-x-2 xl:space-x-3 px-3 xl:px-5 py-2 xl:py-3 rounded-lg xl:rounded-xl border ${getStatusColor(withdrawal.status)} shadow-lg`}>
+                          {getStatusIcon(withdrawal.status)}
+                          <span className="text-sm xl:text-base font-semibold whitespace-nowrap">{getStatusText(withdrawal.status)}</span>
+                        </div>
+                      </td>
+                      
+                      <td className="px-4 xl:px-6 py-4 min-w-[140px] xl:min-w-[170px]">
+                        <div className="flex items-center space-x-2 xl:space-x-3">
+                          {withdrawal.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => handleStatusUpdate(withdrawal.id, 'completed')}
+                                disabled={processingId === withdrawal.id}
+                                className="bg-green-500 hover:bg-green-600 text-white flex-shrink-0 rounded-lg xl:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 px-3 xl:px-4 py-2"
+                              >
+                                <CheckCircle className="w-4 h-4 xl:w-5 xl:h-5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleStatusUpdate(withdrawal.id, 'rejected')}
+                                disabled={processingId === withdrawal.id}
+                                className="bg-red-500 hover:bg-red-600 text-white flex-shrink-0 rounded-lg xl:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 px-3 xl:px-4 py-2"
+                              >
+                                <XCircle className="w-4 h-4 xl:w-5 xl:h-5" />
+                              </Button>
+                            </>
+                          )}
+                          {withdrawal.status === 'processing' && (
                             <Button
                               size="sm"
                               onClick={() => handleStatusUpdate(withdrawal.id, 'completed')}
                               disabled={processingId === withdrawal.id}
-                              className="bg-green-500 hover:bg-green-600 text-white"
+                              className="bg-green-500 hover:bg-green-600 text-white flex-shrink-0 rounded-lg xl:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 px-3 xl:px-4 py-2"
                             >
-                              <CheckCircle className="w-4 h-4" />
+                              <CheckCircle className="w-4 h-4 xl:w-5 xl:h-5" />
                             </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleStatusUpdate(withdrawal.id, 'rejected')}
-                              disabled={processingId === withdrawal.id}
-                              className="bg-red-500 hover:bg-red-600 text-white"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                        {withdrawal.status === 'processing' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleStatusUpdate(withdrawal.id, 'completed')}
-                            disabled={processingId === withdrawal.id}
-                            className="bg-green-500 hover:bg-green-600 text-white"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {filteredWithdrawals.length === 0 && (
-            <div className="text-center py-8 md:py-12">
-              <DollarSign className="w-12 h-12 md:w-16 md:h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg md:text-xl font-bold text-white mb-2">Aucune demande trouvée</h3>
-              <p className="text-gray-400 text-sm md:text-base">Aucune demande de retrait ne correspond à vos critères</p>
+            <div className="text-center py-8 sm:py-12">
+              <DollarSign className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 text-gray-500 mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg lg:text-xl font-bold text-white mb-1 sm:mb-2">Aucune demande trouvée</h3>
+              <p className="text-gray-400 text-xs sm:text-sm lg:text-base">Aucune demande de retrait ne correspond à vos critères</p>
             </div>
           )}
         </div>

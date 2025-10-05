@@ -308,7 +308,7 @@ function ModerationPanel() {
                                                         onLoadStart={() => console.log('Video load started:', item.url)}
                                                         onLoadedData={() => console.log('Video data loaded:', item.url)}
                                                         onError={(e) => {
-                                                            console.error('❌ Video load error:', {
+                                                            console.error('Video load error:', {
                                                                 url: item.url,
                                                                 error: e.target.error,
                                                                 networkState: e.target.networkState,

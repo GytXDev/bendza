@@ -424,7 +424,7 @@ const PaymentCallback = () => {
                   onClick={() => navigate('/')}
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                 >
-                  Voir le contenu acheté
+                  Voir le contenu acheté 
                 </Button>
               ) : (
                 <Button

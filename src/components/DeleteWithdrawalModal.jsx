@@ -38,8 +38,14 @@ const DeleteWithdrawalModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-[425px] bg-gray-900 text-white border-gray-700">
+      <DialogContent 
+        className="w-[95vw] max-w-[425px] bg-gray-900 text-white border-gray-700"
+        aria-describedby="delete-withdrawal-description"
+      >
         <DialogHeader>
+          <p id="delete-withdrawal-description" className="sr-only">
+            Confirmation de suppression de demande de retrait
+          </p>
           <DialogTitle className="text-xl font-bold text-red-500 flex items-center">
             <AlertTriangle className="w-6 h-6 mr-3" />
             Supprimer la demande

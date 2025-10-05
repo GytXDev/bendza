@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { useToast } from './ui/use-toast';
 import { uploadContent } from '../lib/storage';
 import { supabase } from '../lib/supabase';
+import { imageUploadService } from '../lib/imageUpload';
 
 const MultipleMediaUpload = ({ contentId, onMediaAdded, existingMedia = [] }) => {
   const [files, setFiles] = useState([]);
@@ -247,13 +248,47 @@ const MultipleMediaUpload = ({ contentId, onMediaAdded, existingMedia = [] }) =>
                     variant="destructive"
                     size="sm"
                     onClick={async () => {
-                      const { error } = await supabase
-                        .from('content_media')
-                        .delete()
-                        .eq('id', media.id);
-                      
-                      if (!error && onMediaAdded) {
-                        onMediaAdded(); // Rafraîchir la liste
+                      try {
+                        // Supprimer le fichier du storage
+                        if (media.media_url) {
+                          console.log('Suppression du média du storage...');
+                          const deletionResult = await imageUploadService.deleteOldImage(media.media_url);
+                          
+                          if (!deletionResult.success) {
+                            console.warn('Échec de la suppression du fichier:', deletionResult.error);
+                            toast({
+                              title: "Avertissement",
+                              description: "Le média a été supprimé de la base de données mais le fichier pourrait encore exister",
+                              variant: "destructive",
+                            });
+                          } else {
+                            console.log('Fichier supprimé avec succès');
+                          }
+                        }
+
+                        // Supprimer l'entrée de la base de données
+                        const { error } = await supabase
+                          .from('content_media')
+                          .delete()
+                          .eq('id', media.id);
+                        
+                        if (error) throw error;
+
+                        toast({
+                          title: "Média supprimé",
+                          description: "Le média a été supprimé avec succès",
+                        });
+                        
+                        if (onMediaAdded) {
+                          onMediaAdded(); // Rafraîchir la liste
+                        }
+                      } catch (error) {
+                        console.error('Erreur lors de la suppression:', error);
+                        toast({
+                          title: "Erreur",
+                          description: "Impossible de supprimer le média",
+                          variant: "destructive",
+                        });
                       }
                     }}
                   >

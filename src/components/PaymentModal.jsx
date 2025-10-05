@@ -111,7 +111,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
           fusionPayService.redirectToPayment(result.paymentUrl);
         }, 1000);
       } else {
-        console.error('❌ PaymentModal: Payment initiation failed:', result);
+        console.error('PaymentModal: Payment initiation failed:', result);
         toast({
           title: "Erreur de paiement",
           description: result.error || "Impossible d'initier le paiement. URL de paiement manquante.",
@@ -119,7 +119,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
         });
       }
     } catch (error) {
-      console.error('❌ PaymentModal: Payment error:', error);
+      console.error('PaymentModal: Payment error:', error);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite",
@@ -154,8 +154,14 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700">
+      <DialogContent 
+        className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700"
+        aria-describedby="payment-description"
+      >
         <DialogHeader>
+          <p id="payment-description" className="sr-only">
+            Modal de paiement pour acheter du contenu
+          </p>
           <DialogTitle className="text-2xl font-bold text-orange-500">
             {getPaymentTitle()}
           </DialogTitle>

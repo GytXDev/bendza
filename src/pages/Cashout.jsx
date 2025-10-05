@@ -389,27 +389,30 @@ function Cashout() {
         <meta name="description" content="Gérez vos retraits et commissions sur Bendza" />
       </Helmet>
 
-      <div className="min-h-screen bg-black text-white p-4">
+      <div className="min-h-screen bg-black text-white">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-16 md:mt-0">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white mb-2">Cashout</h1>
-          <p className="text-gray-400">Gérez vos gains et retraits</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
+            <div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Cashout</h1>
+              <p className="text-gray-400 text-sm sm:text-base">Gérez vos gains et retraits</p>
+            </div>
         </div>
 
         {/* Carte principale - Solde disponible */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 mb-6"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-white" />
+            className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 lg:mb-10"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <p className="text-white/80 text-sm">Solde disponible</p>
-                <p className="text-3xl font-bold text-white">
+                  <p className="text-white/80 text-sm sm:text-base">Solde disponible</p>
+                  <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
                   {formatPrice(stats.availableBalance)}
                 </p>
               </div>
@@ -417,40 +420,40 @@ function Cashout() {
             <Button
               onClick={() => setShowCashoutModal(true)}
               disabled={stats.availableBalance <= 0}
-              className="bg-white text-orange-500 hover:bg-white/90 font-semibold"
+                className="bg-white text-orange-500 hover:bg-white/90 font-semibold w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl"
             >
               <ArrowUpRight className="w-4 h-4 mr-2" />
               Retirer
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/10 rounded-lg p-3">
-              <p className="text-white/80 text-xs mb-1">Gains totaux</p>
-              <p className="text-white font-semibold">{formatPrice(stats.totalEarnings)}</p>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-white/10 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <p className="text-white/80 text-xs sm:text-sm mb-1 sm:mb-2">Gains totaux</p>
+                <p className="text-white font-semibold text-sm sm:text-base">{formatPrice(stats.totalEarnings)}</p>
             </div>
-            <div className="bg-white/10 rounded-lg p-3">
-              <p className="text-white/80 text-xs mb-1">Ce mois</p>
-              <p className="text-white font-semibold">{formatPrice(stats.thisMonthEarnings)}</p>
+              <div className="bg-white/10 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <p className="text-white/80 text-xs sm:text-sm mb-1 sm:mb-2">Ce mois</p>
+                <p className="text-white font-semibold text-sm sm:text-base">{formatPrice(stats.thisMonthEarnings)}</p>
             </div>
           </div>
         </motion.div>
 
         {/* Statistiques détaillées */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-gray-900 rounded-xl p-4"
-          >
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <Plus className="w-4 h-4 text-green-500" />
+              className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700"
+            >
+              <div className="flex items-center space-x-3 sm:space-x-4 mb-2 sm:mb-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
               </div>
               <div>
-                <p className="text-gray-400 text-xs">Gains totaux</p>
-                <p className="text-white font-semibold">{formatPrice(stats.totalEarnings)}</p>
+                  <p className="text-gray-400 text-xs sm:text-sm">Gains totaux</p>
+                  <p className="text-white font-semibold text-sm sm:text-base">{formatPrice(stats.totalEarnings)}</p>
               </div>
             </div>
           </motion.div>
@@ -459,129 +462,127 @@ function Cashout() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-gray-900 rounded-xl p-4"
-          >
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <Minus className="w-4 h-4 text-blue-500" />
+              className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700"
+            >
+              <div className="flex items-center space-x-3 sm:space-x-4 mb-2 sm:mb-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <Minus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
               </div>
               <div>
-                <p className="text-gray-400 text-xs">Retraits totaux</p>
-                <p className="text-white font-semibold">{formatPrice(stats.totalPayouts)}</p>
+                  <p className="text-gray-400 text-xs sm:text-sm">Retraits totaux</p>
+                  <p className="text-white font-semibold text-sm sm:text-base">{formatPrice(stats.totalPayouts)}</p>
               </div>
             </div>
           </motion.div>
         </div>
 
         {/* Historique des retraits */}
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-gray-700 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <CreditCard className="w-6 h-6 mr-3 text-orange-500" />
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-2 sm:space-y-0">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center">
+                <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-orange-500" />
               Historique des retraits
             </h2>
-            <div className="text-sm text-gray-400">
+              <div className="text-xs sm:text-sm text-gray-400">
               {recentPayouts.length} retrait{recentPayouts.length > 1 ? 's' : ''}
             </div>
           </div>
           
           {recentPayouts.length === 0 ? (
-            <div className="bg-gray-900/50 rounded-xl p-8 text-center border border-gray-700">
-              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-8 h-8 text-gray-500" />
-              </div>
-              <p className="text-gray-400 text-lg mb-2">Aucun retrait effectué</p>
-              <p className="text-gray-500 text-sm">Vos demandes de retrait apparaîtront ici</p>
+              <div className="bg-gray-900/50 rounded-xl p-6 sm:p-8 text-center border border-gray-700">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-gray-500" />
+                </div>
+                <p className="text-gray-400 text-base sm:text-lg mb-1 sm:mb-2">Aucun retrait effectué</p>
+                <p className="text-gray-500 text-xs sm:text-sm">Vos demandes de retrait apparaîtront ici</p>
             </div>
           ) : (
-            <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
               {recentPayouts.map((payout, index) => {
                 const netAmount = payout.net_amount || (payout.amount - (payout.withdrawal_fee || 0));
                 const withdrawalFee = payout.withdrawal_fee || Math.round(payout.amount * 0.10);
                 
                 return (
-                  <motion.div
-                    key={payout.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-5 border border-gray-700 hover:border-gray-600 transition-all duration-200"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center">
-                          {getStatusIcon(payout.status)}
-                        </div>
-                        <div>
-                          <div className="flex items-center space-x-2 mb-1">
-                            <p className="text-white font-bold text-lg">{formatPrice(netAmount)}</p>
-                          </div>
-                          <div className="flex items-center space-x-3 text-sm">
-                            <p className="text-gray-400">
-                              {new Date(payout.requested_at).toLocaleDateString('fr-FR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              })}
-                            </p>
-                            <span className="text-gray-600">•</span>
-                            <p className="text-gray-400 capitalize">
-                              {(payout.payment_method || 'mobile_money').replace('_', ' ')}
-                            </p>
-                            {payout.phone_number && (
-                              <div className="flex items-center space-x-2 text-sm mt-1">
-                                <p className="text-gray-400">{payout.phone_number}</p>
-                                {payout.country && (
-                                  <>
-                                    <span className="text-gray-600">•</span>
-                                    <p className="text-gray-400 text-xs uppercase">{payout.country}</p>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          
-                        </div>
+                <motion.div
+                  key={payout.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-4 sm:p-5 border border-gray-700 hover:border-gray-600 transition-all duration-200"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-800 rounded-full flex items-center justify-center">
+                        {getStatusIcon(payout.status)}
                       </div>
-                      
-                      <div className="text-right">
-                        <div className="flex items-center space-x-2">
-                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            payout.status === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                            payout.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                            payout.status === 'approved' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                            'bg-red-500/20 text-red-400 border border-red-500/30'
-                          }`}>
-                            {getStatusText(payout.status)}
-                          </div>
-                          
-                          {/* Actions pour les demandes en attente */}
-                          {payout.status === 'pending' && (
-                            <div className="flex items-center space-x-1">
-                              <button
-                                onClick={() => handleEditPayout(payout)}
-                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-700 rounded-full transition-colors"
-                                title="Modifier"
-                              >
-                                <Edit3 className="w-4 h-4 text-gray-400 hover:text-orange-500" />
-                              </button>
-                              <button
-                                onClick={() => handleDeletePayout(payout)}
-                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-700 rounded-full transition-colors"
-                                title="Supprimer"
-                              >
-                                <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
-                              </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1 sm:mb-2">
+                          <p className="text-white font-bold text-base sm:text-lg">{formatPrice(netAmount)}</p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 text-xs sm:text-sm">
+                          <p className="text-gray-400">
+                            {new Date(payout.requested_at).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })}
+                          </p>
+                          <span className="text-gray-600 hidden sm:inline">•</span>
+                          <p className="text-gray-400 capitalize">
+                            {(payout.payment_method || 'mobile_money').replace('_', ' ')}
+                          </p>
+                          {payout.phone_number && (
+                            <div className="flex items-center space-x-2 text-xs sm:text-sm">
+                              <p className="text-gray-400">{payout.phone_number}</p>
+                              {payout.country && (
+                                <>
+                                  <span className="text-gray-600">•</span>
+                                  <p className="text-gray-400 text-xs uppercase">{payout.country}</p>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                      <div className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium ${
+                        payout.status === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                        payout.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                        payout.status === 'approved' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                        'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                        {getStatusText(payout.status)}
+                      </div>
+                      
+                      {/* Actions pour les demandes en attente */}
+                      {payout.status === 'pending' && (
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <button
+                            onClick={() => handleEditPayout(payout)}
+                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-gray-700 rounded-lg sm:rounded-xl transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit3 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 hover:text-orange-500" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePayout(payout)}
+                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-gray-700 rounded-lg sm:rounded-xl transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 hover:text-red-500" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    </div>
                   </motion.div>
                 );
               })}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Modal de retrait */}

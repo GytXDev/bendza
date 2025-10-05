@@ -199,7 +199,7 @@ function HomePage() {
             }
 
         } catch (error) {
-            console.error('❌ HomePage: Payment initiation failed:', error);
+            console.error('HomePage: Payment initiation failed:', error);
             toast({
                 title: "Erreur de paiement",
                 description: error.message || "Impossible d'initier le paiement",
@@ -223,13 +223,6 @@ function HomePage() {
                         p_user_id: user.id,
                         p_content_id: contentId
                     });
-                    
-                    if (!error) {
-                        toast({
-                            title: "Contenu gratuit !",
-                            description: "Vous pouvez maintenant accéder au contenu",
-                        });
-                    }
                 }
                 return;
             }
@@ -293,11 +286,7 @@ function HomePage() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"
-                    />
+                    <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -314,11 +303,7 @@ function HomePage() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"
-                    />
+                    <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -511,8 +496,7 @@ function HomePage() {
                                                 >
                                                     <motion.div
                                                         animate={{ 
-                                                            scale: [1, 1.2, 1],
-                                                            rotate: [0, 5, -5, 0]
+                                                            scale: [1, 1.2, 1]
                                                         }}
                                                         transition={{ 
                                                             duration: 2,

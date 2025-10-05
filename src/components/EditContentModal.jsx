@@ -16,6 +16,7 @@ import {
 } from './ui/dialog';
 import { uploadContent, deleteFileByPath } from '../lib/storage';
 import { formatFileSize } from '../lib/mediaOptimizer';
+import { imageUploadService } from '../lib/imageUpload';
 
 const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
   const { user } = useAuth();
@@ -181,10 +182,10 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
       return;
     }
 
-    if (!formData.price || formData.price < 100) {
+    if (formData.price < 0) {
       toast({
         title: "Erreur",
-        description: "Le prix doit être d'au moins 100 FCFA",
+        description: "Le prix ne peut pas être négatif",
         variant: "destructive",
       });
       return;
@@ -203,6 +204,9 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
         updated_at: new Date().toISOString()
       };
 
+      // Variable pour stocker le résultat de la suppression
+      let deletionResult = null;
+
       // Si un nouveau fichier a été sélectionné
       if (hasNewFile && selectedFile) {
         // Upload du nouveau fichier
@@ -210,16 +214,20 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
         if (!uploadResult) throw new Error('Erreur lors de l\'upload du nouveau fichier');
 
         // Supprimer l'ancien fichier si possible
-        try {
-          if (content.url) {
-            // Extraire le chemin du fichier de l'URL
-            const urlParts = content.url.split('/');
-            const fileName = urlParts[urlParts.length - 1];
-            const filePath = `${user.id}/content/${fileName}`;
-            await deleteFileByPath(filePath, 'content');
+        if (content.url) {
+          try {
+            console.log('Suppression de l\'ancien média...');
+            deletionResult = await imageUploadService.deleteOldImage(content.url);
+            
+            if (!deletionResult.success) {
+              console.warn('Échec de la suppression de l\'ancien média:', deletionResult.error);
+            } else {
+              console.log('Ancien média supprimé avec succès');
+            }
+          } catch (deleteError) {
+            console.warn('Erreur lors de la suppression de l\'ancien média:', deleteError);
+            deletionResult = { success: false, error: deleteError.message };
           }
-        } catch (deleteError) {
-          console.warn('Impossible de supprimer l\'ancien fichier:', deleteError);
         }
 
         updateData.url = uploadResult.publicUrl;
@@ -235,9 +243,19 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
 
       if (error) throw error;
 
+      // Message de succès avec information sur la suppression
+      let description = "Vos modifications ont été sauvegardées et le contenu est en attente de modération";
+      if (hasNewFile && deletionResult) {
+        if (deletionResult.success) {
+          description += " • Ancien média supprimé";
+        } else {
+          description += " • Ancien média conservé (erreur de suppression)";
+        }
+      }
+
       toast({
         title: "Contenu mis à jour !",
-        description: "Vos modifications ont été sauvegardées et le contenu est en attente de modération",
+        description: description,
       });
 
       // Appeler la fonction de callback pour rafraîchir la liste
@@ -268,12 +286,18 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
       }
       onClose();
     }}>
-      <DialogContent className="sm:max-w-4xl max-h-[95vh] overflow-y-auto">
+      <DialogContent 
+        className="sm:max-w-4xl max-h-[95vh] overflow-y-auto"
+        aria-describedby="edit-content-description"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Edit className="text-orange-500" size={24} />
             <span>Modifier le contenu</span>
           </DialogTitle>
+          <p id="edit-content-description" className="text-sm text-gray-400 mt-2">
+            Modifiez les informations de votre contenu. Vous pouvez remplacer le média actuel par un nouveau fichier.
+          </p>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -475,14 +499,18 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                min="100"
+                min="0"
                 max="50000"
                 step="50"
                 required
                 className="w-full"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Prix minimum: 100 FCFA
+                {formData.price === 0 ? (
+                  <span className="text-blue-400">Contenu gratuit - visible par tous</span>
+                ) : (
+                  <span>Prix libre - 0 FCFA pour un contenu gratuit</span>
+                )}
               </p>
             </div>
 

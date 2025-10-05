@@ -18,6 +18,8 @@ import Cashout from './pages/Cashout'
 import PaymentCallback from './pages/PaymentCallback'
 import ModerationPanel from './pages/ModerationPanel'
 import AdminWithdrawals from './pages/AdminWithdrawals'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 
 // Components
 import RequireAuth from './components/RequireAuth'
@@ -93,6 +95,19 @@ function App() {
                             
                             {/* Route de callback pour les paiements */}
                             <Route path="/payment-callback" element={<PaymentCallback />} />
+                            
+                            {/* Pages légales */}
+                            <Route path="/privacy" element={
+                                <Layout>
+                                    <PrivacyPolicy />
+                                </Layout>
+                            } />
+                            
+                            <Route path="/terms" element={
+                                <Layout>
+                                    <TermsOfService />
+                                </Layout>
+                            } />
                             
                             {/* 404 route */}
                             <Route path="*" element={

@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
       
       if (selectError) {
-        console.error('❌ AuthContext: Error checking existing user:', selectError);
+        console.error('AuthContext: Error checking existing user:', selectError);
         throw selectError;
       }
       
@@ -65,13 +65,13 @@ export const AuthProvider = ({ children }) => {
           .select();
         
         if (error) {
-          console.error('❌ AuthContext: Error inserting user:', error);
+          console.error('AuthContext: Error inserting user:', error);
           throw error;
         }
         
       }
     } catch (error) {
-      console.error('❌ AuthContext: Upsert user failed:', error);
+      console.error('AuthContext: Upsert user failed:', error);
       throw error;
     }
   };
@@ -87,13 +87,13 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ AuthContext: Error fetching user profile:', error);
+        console.error('AuthContext: Error fetching user profile:', error);
         return null;
       }
       
       return data;
     } catch (error) {
-      console.error('❌ AuthContext: Exception in fetchUserProfile:', error);
+      console.error('AuthContext: Exception in fetchUserProfile:', error);
       return null;
     }
   };
@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }) => {
         // S'assurer que loading est mis à false après setUser
         setLoading(false);
       } catch (error) {
-        console.error('❌ AuthContext: Error in handleSession:', error);
+        console.error('AuthContext: Error in handleSession:', error);
         setUser(null);
         setLoading(false);
       }
@@ -176,7 +176,7 @@ export const AuthProvider = ({ children }) => {
           listener = data;
         }
       } catch (error) {
-        console.error('❌ AuthContext: Auth initialization error:', error);
+        console.error('AuthContext: Auth initialization error:', error);
         if (mounted) {
           setLoading(false);
         }
@@ -232,7 +232,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       
     } catch (error) {
-      console.error('❌ Erreur lors de la réinitialisation:', error);
+      console.error('Erreur lors de la réinitialisation:', error);
     }
   };
 
