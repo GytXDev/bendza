@@ -21,8 +21,12 @@ import {
 } from 'lucide-react';
 
 function Cashout() {
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Debug logs
+  console.log('💰 Cashout: user state:', user);
+  console.log('💰 Cashout: user.is_creator:', user?.is_creator);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEarnings: 0,
@@ -37,10 +41,10 @@ function Cashout() {
   const [selectedMethod, setSelectedMethod] = useState('mobile_money');
 
   useEffect(() => {
-    if (user && userProfile?.is_creator) {
+    if (user && user?.is_creator) {
       fetchCashoutData();
     }
-  }, [user, userProfile]);
+  }, [user]);
 
   const fetchCashoutData = async () => {
     try {
@@ -193,7 +197,7 @@ function Cashout() {
     }
   };
 
-  if (!userProfile?.is_creator) {
+  if (!user?.is_creator) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">

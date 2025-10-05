@@ -1,22 +1,18 @@
-
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, Smartphone } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
+import { X, Smartphone, ExternalLink } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { useToast } from './ui/use-toast';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import {
-  processAirtelMoneyPayment,
-  validateMobileNumber
-} from '@/lib/payment';
-import { useAuth } from '@/contexts/AuthContext';
+} from './ui/dialog';
+import { fusionPayService } from '../lib/fusionpay';
+import { useAuth } from '../contexts/AuthContext';
 
 const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, contentTitle }) => {
   const [mobileNumber, setMobileNumber] = useState('');
@@ -28,11 +24,22 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
     e.preventDefault();
 
     // Validation du numéro de téléphone
-    if (!validateMobileNumber(mobileNumber)) {
+    if (!mobileNumber.trim()) {
       toast({
         title: "Erreur",
-        description: "Veuillez entrer un numéro de téléphone valide (format: 077001200, 074001200, ou 076001200)",
-        variant: "destructive",
+        description: "Veuillez saisir votre numéro de téléphone",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validation du format du numéro (74, 77, 76, 65, 66, 62) - 8 chiffres au total
+    const phoneRegex = /^(74|77|76|65|66|62)[0-9]{6}$/;
+    if (!phoneRegex.test(mobileNumber.replace(/\s/g, ''))) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez saisir un numéro valide de 8 chiffres commençant par 74, 77, 76, 65, 66 ou 62",
+        variant: "destructive"
       });
       return;
     }
@@ -40,122 +47,160 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
     setLoading(true);
 
     try {
-      // Appel à l'API Airtel Money (seulement amount et mobileNumber)
-      const paymentResult = await processAirtelMoneyPayment({
-        amount,
-        mobileNumber: mobileNumber.replace(/\s/g, ''),
-      });
+      console.log('🚀 PaymentModal: Initiating FusionPay payment');
 
-      if (paymentResult.success) {
+      // Préparer les données de paiement
+      const paymentData = {
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.name || user.email,
+        userPhone: mobileNumber.replace(/\s/g, ''),
+        amount: amount,
+        type: type
+      };
+
+      // Initier le paiement via FusionPay
+      const result = await fusionPayService.initiateCreatorPayment(paymentData);
+
+      if (result.success) {
+        console.log('✅ PaymentModal: Payment initiated, redirecting to:', result.paymentUrl);
+        
         toast({
-          title: "Paiement réussi !",
-          description: paymentResult.message,
+          title: "Redirection vers le paiement",
+          description: "Vous allez être redirigé vers la page de paiement Mobile Money"
         });
 
-        // Appel du callback de succès avec les données du paiement
-        onSuccess({
-          mobileNumber,
-          amount,
-        });
+        // Rediriger vers la page de paiement
+        setTimeout(() => {
+          fusionPayService.redirectToPayment(result.paymentUrl);
+        }, 1000);
+
       } else {
-        throw new Error(paymentResult.error);
+        console.error('❌ PaymentModal: Payment initiation failed:', result.error);
+        toast({
+          title: "Erreur de paiement",
+          description: result.error || "Impossible d'initier le paiement",
+          variant: "destructive"
+        });
       }
 
     } catch (error) {
+      console.error('❌ PaymentModal: Payment error:', error);
       toast({
-        title: "Erreur de paiement",
-        description: error.message || "Le paiement n'a pas pu être traité. Veuillez réessayer.",
-        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur inattendue s'est produite",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
-  }, [mobileNumber, amount, type, creatorName, contentTitle, user?.id, onSuccess, toast]);
+  }, [mobileNumber, amount, type, user, toast]);
 
-  const handleClose = useCallback(() => {
-    if (!loading) {
-      onClose();
+  const getPaymentTitle = () => {
+    switch (type) {
+      case 'creator_activation':
+        return 'Activation du compte créateur';
+      case 'content_purchase':
+        return `Achat de contenu - ${contentTitle}`;
+      default:
+        return 'Paiement';
     }
-  }, [loading, onClose]);
+  };
+
+  const getPaymentDescription = () => {
+    switch (type) {
+      case 'creator_activation':
+        return 'Payez pour activer votre compte créateur et commencer à monétiser votre contenu';
+      case 'content_purchase':
+        return `Achetez le contenu "${contentTitle}" de ${creatorName}`;
+      default:
+        return 'Effectuez votre paiement via Mobile Money';
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <span>Paiement Mobile Money</span>
+          <DialogTitle className="text-white flex items-center space-x-2">
+            <Smartphone className="w-5 h-5 text-orange-500" />
+            <span>{getPaymentTitle()}</span>
           </DialogTitle>
-          <DialogDescription>
-            {type === 'abonnement'
-              ? `Abonnement à ${creatorName} - ${amount} FCFA/mois`
-              : `Achat de contenu - ${amount} FCFA`
-            }
+          <DialogDescription className="text-gray-400">
+            {getPaymentDescription()}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handlePayment} className="space-y-6">
-          <div className="space-y-4">
-            <div className="bg-[#2a2a2a] p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300">Montant à payer:</span>
-                <span className="text-[#FF5A00] font-bold text-lg">{amount} FCFA</span>
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          {/* Informations de paiement */}
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-300">Montant à payer</span>
+              <span className="text-xl font-bold text-orange-500">{amount} FCFA</span>
             </div>
+          </div>
 
+          {/* Formulaire de paiement */}
+          <form onSubmit={handlePayment} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Numéro de téléphone
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Numéro de téléphone Mobile Money
               </label>
-              <div className="relative">
-                <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <Input
-                  type="tel"
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value)}
-                  className="pl-10"
-                  placeholder="Numéro de téléphone"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Entrez votre numéro Mobile Money (Orange Money, Free Money, etc.)
+              <Input
+                type="tel"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
+                placeholder="74123456"
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500"
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Format: 74123456 (8 chiffres, commence par 74, 77, 76, 65, 66 ou 62)
               </p>
             </div>
-          </div>
 
-          <div className="flex space-x-3">
-            <Button
-              type="button"
-              onClick={handleClose}
-              variant="outline"
-              className="flex-1 border-[#2a2a2a] text-gray-300 hover:border-[#FF5A00]"
-              disabled={loading}
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              className="bendza-button flex-1"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Traitement...
-                </div>
-              ) : (
-                'Payer maintenant'
-              )}
-            </Button>
-          </div>
-        </form>
+            {/* Boutons d'action */}
+            <div className="flex space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                Annuler
+              </Button>
+              
+              <Button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {loading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Redirection...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Payer maintenant</span>
+                  </div>
+                )}
+              </Button>
+            </div>
+          </form>
 
-        <div className="text-center">
-          <p className="text-xs text-gray-400">
-            Paiement sécurisé via Mobile Money
-          </p>
-        </div>
+          {/* Informations de sécurité */}
+          <div className="text-center text-xs text-gray-500">
+            <p>🔒 Paiement sécurisé via FusionPay</p>
+          </div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );

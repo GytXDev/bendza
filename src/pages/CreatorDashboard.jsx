@@ -10,8 +10,6 @@ import { useToast } from '../components/ui/use-toast';
 import { 
     Plus, 
     Eye, 
-    DollarSign, 
-    TrendingUp, 
     Calendar,
     Edit,
     Trash2,
@@ -22,16 +20,14 @@ import {
 import CreateContentModal from '../components/CreateContentModal';
 
 function CreatorDashboard() {
-    const { user, userProfile } = useAuth();
+    const { user } = useAuth();
     const { toast } = useToast();
     const [content, setContent] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [stats, setStats] = useState({
         totalContent: 0,
-        totalViews: 0,
-        totalEarnings: 0,
-        thisMonthEarnings: 0
+        totalViews: 0
     });
 
     useEffect(() => {
@@ -70,36 +66,17 @@ function CreatorDashboard() {
             // Statistiques du contenu
             const { data: contentData, error: contentError } = await supabase
                 .from('content')
-                .select('views_count, price')
+                .select('views_count')
                 .eq('creator_id', user.id);
 
             if (contentError) throw contentError;
 
-            // Statistiques des transactions
-            const { data: transactionsData, error: transactionsError } = await supabase
-                .from('transactions')
-                .select('amount, created_at')
-                .eq('creator_id', user.id)
-                .eq('status', 'paid');
-
-            if (transactionsError) throw transactionsError;
-
             const totalContent = contentData?.length || 0;
             const totalViews = contentData?.reduce((sum, item) => sum + (item.views_count || 0), 0) || 0;
-            const totalEarnings = transactionsData?.reduce((sum, item) => sum + item.amount, 0) || 0;
-
-            // Revenus de ce mois
-            const thisMonth = new Date();
-            thisMonth.setDate(1);
-            const thisMonthEarnings = transactionsData
-                ?.filter(item => new Date(item.created_at) >= thisMonth)
-                ?.reduce((sum, item) => sum + item.amount, 0) || 0;
 
             setStats({
                 totalContent,
-                totalViews,
-                totalEarnings,
-                thisMonthEarnings
+                totalViews
             });
         } catch (error) {
             console.error('Erreur lors du chargement des statistiques:', error);
@@ -132,9 +109,6 @@ function CreatorDashboard() {
         }
     };
 
-    const formatPrice = (price) => {
-        return `${price} FCFA`;
-    };
 
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('fr-FR', {
@@ -187,7 +161,7 @@ function CreatorDashboard() {
                 </div>
 
                 {/* Statistiques */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -222,39 +196,6 @@ function CreatorDashboard() {
                         </div>
                     </motion.div>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.2 }}
-                        className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-400 text-sm">Revenus totaux</p>
-                                <p className="text-2xl font-bold text-white">{formatPrice(stats.totalEarnings)}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                                <DollarSign className="w-6 h-6 text-green-500" />
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.3 }}
-                        className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-400 text-sm">Ce mois</p>
-                                <p className="text-2xl font-bold text-white">{formatPrice(stats.thisMonthEarnings)}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                                <TrendingUp className="w-6 h-6 text-purple-500" />
-                            </div>
-                        </div>
-                    </motion.div>
                 </div>
 
                 {/* Liste du contenu */}
@@ -312,7 +253,7 @@ function CreatorDashboard() {
                                                             {item.views_count || 0} vues
                                                         </span>
                                                         <span className="text-orange-500 font-semibold">
-                                                            {formatPrice(item.price)}
+                                                            {item.price} FCFA
                                                         </span>
                                                     </div>
                                                 </div>

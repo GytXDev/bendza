@@ -1,5 +1,5 @@
 // src/pages/HomePage.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/use-toast';
-import { Eye, Play, Image, Plus, User, Lock, Unlock } from 'lucide-react';
+import { Eye, Play, Image, Plus, User, Lock, Unlock, Video, FileText, X, MapPin, Calendar, MessageCircle, RefreshCw } from 'lucide-react';
 
 function HomePage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -35,6 +35,9 @@ function HomePage() {
     const [contentLoading, setContentLoading] = useState(true);
     const [purchasedContent, setPurchasedContent] = useState(new Set());
     const [loadingTimeout, setLoadingTimeout] = useState(false);
+    const [showInfoBanner, setShowInfoBanner] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const videoRefs = useRef({});
 
     // Fonction de déconnexion
     const handleSignOut = async () => {
@@ -56,21 +59,20 @@ function HomePage() {
     };
 
     // Charger le contenu et les achats de l'utilisateur
-    useEffect(() => {
         const loadData = async () => {
             setContentLoading(true);
-            setLoadingTimeout(false);
-            
-            // Timeout de 6 secondes
-            const timeoutId = setTimeout(() => {
-                setLoadingTimeout(true);
-                setContentLoading(false);
-                toast({
-                    title: "Chargement lent",
-                    description: "Le chargement prend plus de temps que prévu. Vérifiez votre connexion.",
-                    variant: "destructive"
-                });
-            }, 6000);
+        setLoadingTimeout(false);
+        
+        // Timeout de 6 secondes
+        const timeoutId = setTimeout(() => {
+            setLoadingTimeout(true);
+            setContentLoading(false);
+            toast({
+                title: "Chargement lent",
+                description: "Le chargement prend plus de temps que prévu. Vérifiez votre connexion.",
+                variant: "destructive"
+            });
+        }, 6000);
             
             try {
                 // Charger le contenu publié avec les informations des créateurs
@@ -117,19 +119,44 @@ function HomePage() {
             } catch (error) {
                 console.error('Error in loadData:', error);
                 setContent([]);
-                toast({
-                    title: "Erreur de chargement",
-                    description: "Impossible de charger le contenu. Vérifiez votre connexion.",
-                    variant: "destructive"
-                });
+            toast({
+                title: "Erreur de chargement",
+                description: "Impossible de charger le contenu. Vérifiez votre connexion.",
+                variant: "destructive"
+            });
             } finally {
-                clearTimeout(timeoutId);
+            clearTimeout(timeoutId);
                 setContentLoading(false);
+            setRefreshing(false);
             }
         };
 
+    useEffect(() => {
         loadData();
     }, [user?.id, toast]);
+
+    // Auto-play des vidéos au scroll
+    useEffect(() => {
+        const handleScroll = () => {
+            const videos = Object.values(videoRefs.current);
+            videos.forEach(video => {
+                if (video) {
+                    const rect = video.getBoundingClientRect();
+                    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+                    const isInCenter = rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2;
+                    
+                    if (isInCenter && !video.paused) {
+                        video.play().catch(console.log);
+                    } else if (!isVisible || !isInCenter) {
+                        video.pause();
+                    }
+                }
+            });
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [content]);
 
     const handlePurchase = async (contentId, price) => {
         if (!user) {
@@ -198,6 +225,59 @@ function HomePage() {
         }
     };
 
+    // Nouvelle fonction pour gérer la vue d'un contenu (paiement unique)
+    const handleViewContent = async (contentId, price) => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            // Vérifier si l'utilisateur est le créateur du contenu
+            const contentItem = content.find(c => c.id === contentId);
+            if (contentItem && contentItem.creator_id === user.id) {
+                // Le créateur peut voir son propre contenu gratuitement
+                setPurchasedContent(prev => new Set([...prev, contentId]));
+                return;
+            }
+
+            // Vérifier si l'utilisateur a déjà payé pour ce contenu
+            if (purchasedContent.has(contentId)) {
+                return;
+            }
+
+            // Enregistrer la vue via la fonction SQL
+            const { error } = await supabase.rpc('record_view', {
+                p_user_id: user.id,
+                p_content_id: contentId
+            });
+
+            if (error) {
+                console.error('Erreur lors de l\'enregistrement de la vue:', error);
+                // Si c'est un contenu payant, déclencher le paiement
+                if (price > 0) {
+                    await handlePurchase(contentId, price);
+                }
+            } else {
+                // Marquer comme vu
+                setPurchasedContent(prev => new Set([...prev, contentId]));
+                
+                toast({
+                    title: "Contenu débloqué !",
+                    description: "Vous pouvez maintenant accéder au contenu",
+                });
+            }
+
+        } catch (error) {
+            console.error('Erreur lors de la vue du contenu:', error);
+            toast({
+                title: "Erreur",
+                description: "Impossible d'accéder au contenu",
+                variant: "destructive"
+            });
+        }
+    };
+
     const formatPrice = (price) => {
         return `${price} FCFA`;
     };
@@ -211,14 +291,32 @@ function HomePage() {
         });
     };
 
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await loadData();
+        toast({
+            title: "Actualisé",
+            description: "Votre fil d'actualité a été mis à jour"
+        });
+    };
 
     // Afficher un loader pendant le chargement de l'authentification
     if (authLoading) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
-                    <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <div className="text-white text-xl">Chargement...</div>
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"
+                    />
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-white text-lg"
+                    >
+                        Chargement de votre fil d'actualité...
+                    </motion.p>
                 </div>
             </div>
         );
@@ -228,8 +326,18 @@ function HomePage() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
-                    <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <div className="text-white text-xl">Chargement du fil d'actualité...</div>
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"
+                    />
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-white text-lg"
+                    >
+                        Chargement du fil d'actualité...
+                    </motion.p>
                 </div>
             </div>
         );
@@ -240,23 +348,41 @@ function HomePage() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center max-w-md mx-auto px-4">
-                    <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-700"
+                    >
                         <Image className="w-12 h-12 text-gray-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-white mb-3">
+                    </motion.div>
+                    <motion.h3
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-xl font-semibold text-white mb-3"
+                    >
                         Chargement interrompu
-                    </h3>
-                    <p className="text-gray-400 mb-6">
+                    </motion.h3>
+                    <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-gray-400 mb-6"
+                    >
                         Le chargement a pris trop de temps. Vérifiez votre connexion internet et réessayez.
-                    </p>
-                    <div className="space-y-3">
+                    </motion.p>
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="space-y-3"
+                    >
                         <Button 
                             onClick={() => window.location.reload()} 
-                            className="bg-orange-500 hover:bg-orange-600 w-full"
+                            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white w-full py-3 rounded-xl font-semibold"
                         >
                             Réessayer
                         </Button>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         );
@@ -269,169 +395,281 @@ function HomePage() {
                 <meta name="description" content="Découvrez les derniers contenus exclusifs sur BENDZA" />
             </Helmet>
 
-            {/* Fil d'actualité */}
-            <div className="max-w-2xl mx-auto px-4 py-6">
+            {/* Bandeau d'information sur la vérification */}
+            {showInfoBanner && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="bg-gradient-to-r from-gray-900/80 to-gray-800/60 backdrop-blur-md border-b border-white/10"
+                >
+                    <div className="max-w-sm mx-auto px-4 py-3">
+                    <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <p className="text-gray-300 text-xs font-medium">
+                                    Contenus vérifiés et sécurisés
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowInfoBanner(false)}
+                                className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-200"
+                            >
+                                <X className="w-3 h-3 text-gray-300" />
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
+            
+
+            {/* Fil d'actualité format 9:16 */}
+            <div className="max-w-md md:max-w-lg lg:max-w-xl mx-auto mt-4 px-4 pb-8">
                 {content.length > 0 ? (
                     <div className="space-y-6">
-                        {content.map((item, index) => (
-                            <motion.div
+                        {content.map((item, index) => {
+                            console.log('📱 Content item:', {
+                                id: item.id,
+                                type: item.type,
+                                url: item.url,
+                                thumbnail_url: item.thumbnail_url,
+                                price: item.price,
+                                title: item.title
+                            });
+                            
+                            return (
+                                <motion.article
                                 key={item.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    whileHover={{ scale: 1.02 }}
                                 transition={{ duration: 0.3, delay: index * 0.1 }}
-                                className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 transition-all duration-200"
+                                    className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-lg border border-gray-700/50 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300 aspect-[9/16] md:aspect-[4/5] lg:aspect-[3/4] max-h-[80vh] flex flex-col group"
                             >
-                                {/* En-tête du post */}
-                                <div className="p-4 border-b border-gray-800">
-                                    <div className="flex items-center space-x-3">
-                                        <img
-                                            src={item.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.users?.name || 'user'}`}
-                                            alt={item.users?.name}
-                                            className="w-10 h-10 rounded-full object-cover"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center space-x-2">
-                                                <h3 className="font-semibold text-white">{item.users?.name || 'Créateur'}</h3>
-                                                <span className="text-gray-400 text-sm">•</span>
-                                                <span className="text-gray-400 text-sm">{formatDate(item.created_at)}</span>
+                                    {/* Header du post - Informations créateur */}
+                                    <div className="p-3 md:p-4 border-b border-gray-700/30 bg-gradient-to-r from-gray-900/40 to-transparent">
+                                        <div className="flex items-center space-x-2 md:space-x-3">
+                                            <motion.div whileHover={{ scale: 1.1 }} className="relative">
+                                                <img
+                                                    src={item.users?.photourl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.users?.name || 'user'}`}
+                                                    alt={item.users?.name}
+                                                    className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-orange-500/50 shadow-lg"
+                                                />
+                                                {item.users?.is_creator && (
+                                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-gray-900">
+                                                        <span className="text-xs text-white font-bold">✓</span>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-2">
+                                                    <p className="font-semibold text-white text-xs md:text-sm bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+                                                        @{item.users?.name || 'utilisateur'}
+                                                    </p>
+                                                    <div className="flex items-center space-x-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded-full">
+                                                        <Calendar className="w-3 h-3" />
+                                                        <span>{formatDate(item.created_at)}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <span className="text-orange-500 font-bold">{formatPrice(item.price)}</span>
-                                            {item.price > 0 && (
-                                                <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
-                                                    <Lock className="w-3 h-3 text-orange-500" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="mt-3">
-                                        <h2 className="text-lg font-semibold text-white mb-2">{item.title}</h2>
-                                        {item.description && (
-                                            <p className="text-gray-300 text-sm leading-relaxed">{item.description}</p>
-                                        )}
-                                    </div>
                                 </div>
 
-                                {/* Contenu média avec effet flou */}
-                                <div className="relative">
-                                    {!purchasedContent.has(item.id) && item.price > 0 ? (
-                                        /* Contenu flou pour contenu non payé */
-                                        <div className="relative">
+                                    {/* Contenu média */}
+                                    <div className="relative flex-1">
+                                        {item.type === 'image' && (
                                             <img
-                                                src={item.thumbnail_url || '/placeholder.jpg'}
+                                                src={item.url || item.thumbnail_url || 'https://picsum.photos/400/600?random=' + item.id} 
                                                 alt={item.title}
-                                                className="w-full h-64 object-cover filter blur-md"
+                                                className={`w-full h-full object-cover transition-all duration-300 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-xl brightness-50 saturate-50' : ''}`}
+                                                onContextMenu={(e) => e.preventDefault()}
+                                                draggable={false}
                                             />
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                <div className="text-center p-4">
-                                                    <Lock className="w-12 h-12 text-white mx-auto mb-3" />
-                                                    <p className="text-white font-bold text-lg mb-2">Contenu exclusif</p>
-                                                    <p className="text-gray-300 text-sm mb-4">Débloquez pour voir le contenu complet</p>
-                                                    <Button
-                                                        onClick={() => handlePurchase(item.id, item.price)}
-                                                        className="bg-orange-500 hover:bg-orange-600"
-                                                    >
-                                                        <Lock className="w-4 h-4 mr-2" />
-                                                        Débloquer pour {formatPrice(item.price)}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        /* Contenu débloqué ou gratuit */
-                                        <div className="relative">
-                                            {item.type === 'video' ? (
+                                        )}
+                                        {item.type === 'video' && (
+                                            <div className="relative w-full h-full">
                                                 <video
-                                                    className="w-full h-64 object-cover"
-                                                    poster={item.thumbnail_url}
-                                                    controls
+                                                    ref={el => videoRefs.current[item.id] = el}
+                                                    src={item.url || 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'} 
+                                                    poster={item.thumbnail_url || 'https://picsum.photos/400/600?random=' + item.id}
+                                                    controls={purchasedContent.has(item.id) || item.price === 0}
+                                                    controlsList="nodownload nofullscreen noremoteplayback"
+                                                    disablePictureInPicture
+                                                    className={`w-full h-full object-cover transition-all duration-300 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-xl brightness-50 saturate-50' : ''}`}
                                                     onPlay={() => {
-                                                        // Incrémenter le compteur de vues
-                                                        if (user?.id) {
-                                                            supabase
-                                                                .from('content')
-                                                                .update({ 
-                                                                    views_count: (item.views_count || 0) + 1 
-                                                                })
-                                                                .eq('id', item.id)
-                                                                .then(({ error }) => {
-                                                                    if (error) console.error('Error updating view count:', error);
-                                                                });
+                                                        if (user?.id && !purchasedContent.has(item.id)) {
+                                                            handleViewContent(item.id, item.price);
                                                         }
                                                     }}
+                                                    onContextMenu={(e) => e.preventDefault()}
                                                 >
-                                                    <source src={item.url} type="video/mp4" />
+                                                    <source src={item.url || 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'} type="video/mp4" />
                                                     Votre navigateur ne supporte pas la lecture de vidéos.
                                                 </video>
-                                            ) : (
-                                                <img
-                                                    src={item.url || item.thumbnail_url || '/placeholder.jpg'}
-                                                    alt={item.title}
-                                                    className="w-full h-64 object-cover"
-                                                />
-                                            )}
-                                            <div className="absolute top-2 right-2">
-                                                <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center">
-                                                    <Unlock className="w-3 h-3 inline mr-1" />
-                                                    {purchasedContent.has(item.id) ? 'Acheté' : 'Gratuit'}
-                                                </span>
+                                                
+                                                {purchasedContent.has(item.id) || item.price === 0 ? (
+                                                    <div className="absolute bottom-4 right-4">
+                                                        <button
+                                                            onClick={() => {
+                                                                const video = videoRefs.current[item.id];
+                                                                if (video) {
+                                                                    if (video.paused) {
+                                                                        video.play();
+                                                                    } else {
+                                                                        video.pause();
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors backdrop-blur-sm border border-white/20"
+                                                        >
+                                                            <Play className="w-6 h-6 text-white" />
+                                                        </button>
+                                                    </div>
+                                                ) : null}
                                             </div>
+                                        )}
+                                        {item.type === 'text' && (
+                                            <div className={`w-full h-full flex items-center justify-center p-6 ${!purchasedContent.has(item.id) && item.price > 0 ? 'blur-md' : ''}`}>
+                                                <div className="text-center">
+                                                     <h3 className="text-white text-lg font-bold mb-3">{item.title}</h3>
+                                                     <p className="text-white text-sm leading-relaxed">{item.url}</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Overlay de verrouillage pour contenu payant */}
+                                        {!purchasedContent.has(item.id) && item.price > 0 && (
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-purple-900/20 to-black/80 backdrop-blur-[1px]"></div>
+                                                
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="text-center pointer-events-auto relative z-10 p-6 bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-orange-500/30 shadow-2xl mx-4"
+                                                >
+                                                    <motion.div
+                                                        animate={{ 
+                                                            scale: [1, 1.2, 1],
+                                                            rotate: [0, 5, -5, 0]
+                                                        }}
+                                                        transition={{ 
+                                                            duration: 2,
+                                                            repeat: Infinity,
+                                                            ease: "easeInOut"
+                                                        }}
+                                                        className="w-20 h-20 bg-gradient-to-br from-orange-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mb-4 mx-auto border border-orange-500/50 shadow-lg"
+                                                    >
+                                                        <Lock className="w-10 h-10 text-orange-400" />
+                                                    </motion.div>
+                                                    
+                                                   
+                                                    
+                                                    <motion.div
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                    >
+                                                         <Button 
+                                                             onClick={() => handlePurchase(item.id, item.price)}
+                                                             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-2 rounded-full font-semibold shadow-xl hover:shadow-2xl transition-all duration-200 text-sm"
+                                                         >
+                                                             {formatPrice(item.price)} - Débloquer
+                                                         </Button>
+                                                    </motion.div>
+                                                    
+                                                    
+                                                </motion.div>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Pied du post */}
-                                <div className="p-4">
-                                    <div className="flex items-center justify-between text-sm text-gray-400">
-                                        <div className="flex items-center space-x-4">
-                                            <span className="flex items-center">
-                                                <Eye className="w-4 h-4 mr-1" />
-                                                {item.views_count || 0} vues
-                                            </span>
+                                    {/* Footer du post - Titre et statistiques */}
+                                    <div className="p-3 md:p-4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+                                         {item.title && (
+                                             <h3 className="text-white text-xs md:text-sm font-semibold mb-1 line-clamp-2 group-hover:text-orange-200 transition-colors">
+                                                 {item.title}
+                                             </h3>
+                                         )}
+                                         {item.description && item.description !== 'Bendza : crée, publie, encaisse.' && (
+                                             <p className="text-gray-300 text-xs leading-relaxed mb-2 line-clamp-2">
+                                                 {item.description}
+                                             </p>
+                                         )}
+                                        
+                                        {/* Statistiques */}
+                                        <div className="flex items-center justify-between pt-2 border-t border-gray-700/30">
+                                            <div className="flex items-center space-x-2 md:space-x-4 text-gray-400">
+                                                <div className="flex items-center space-x-1">
+                                                     <Eye className="w-3 h-3" />
+                                                     <span className="text-xs font-medium">{item.views_count || 0}</span>
+                                                 </div>
+                                                 
+                                              </div>
+                                            
+                                            {/* Statut d'accès */}
+                                            {purchasedContent.has(item.id) || item.price === 0 ? (
+                                                 <motion.div
+                                                     initial={{ opacity: 0, scale: 0.8 }}
+                                                     animate={{ opacity: 1, scale: 1 }}
+                                                     className="flex items-center space-x-1 bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30"
+                                                 >
+                                                     <Unlock className="w-2.5 h-2.5" />
+                                                     <span className="text-xs font-semibold hidden md:inline">Accès autorisé</span>
+                                                     <span className="text-xs font-semibold md:hidden">✓</span>
+                                                 </motion.div>
+                                             ) : (
+                                                 <div className="flex items-center space-x-1 bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30">
+                                                     <Lock className="w-2.5 h-2.5" />
+                                                     <span className="text-xs font-semibold hidden md:inline">Premium</span>
+                                                     <span className="text-xs font-semibold md:hidden">🔒</span>
+                                                 </div>
+                                             )}
                                         </div>
-                                        {purchasedContent.has(item.id) && (
-                                            <div className="flex items-center text-green-500">
-                                                <Unlock className="w-4 h-4 mr-1" />
-                                                Débloqué
-                                            </div>
-                                        )}
                                     </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.article>
+                            );
+                        })}
                     </div>
                 ) : (
-                    <div className="text-center py-16">
-                        <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Image className="w-12 h-12 text-gray-400" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-white mb-3">
-                            Aucun contenu disponible
-                        </h3>
-                        <p className="text-gray-400 mb-6">
-                            Revenez plus tard pour découvrir de nouveaux contenus exclusifs
-                        </p>
-                        <div className="space-y-3">
-                            <Button 
-                                onClick={() => window.location.reload()} 
-                                className="bg-orange-500 hover:bg-orange-600"
-                            >
-                                Réessayer
-                            </Button>
-                            {user && user?.is_creator && (
-                                <Link to="/dashboard" className="block">
-                                    <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Créer du contenu
-                                    </Button>
-                                </Link>
-                            )}
-                        </div>
+                    <div className="text-center py-16 px-4">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="max-w-md mx-auto"
+                        >
+                            <div className="w-24 h-24 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-gray-700 shadow-2xl">
+                                <Image className="w-12 h-12 text-orange-500" />
+                            </div>
+                             <h3 className="text-xl font-bold text-white mb-3 bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+                                 Aucun contenu disponible
+                             </h3>
+                             <p className="text-gray-400 mb-6 text-sm leading-relaxed">
+                                 Soyez le premier à partager du contenu exclusif sur BENDZA
+                             </p>
+                            <div className="space-y-3">
+                                 <Button 
+                                     onClick={handleRefresh} 
+                                     className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-200 w-full text-sm"
+                                 >
+                                     <RefreshCw className="w-4 h-4 mr-2" />
+                                     Actualiser le fil
+                                 </Button>
+                                {user && user?.is_creator && (
+                                    <Link to="/dashboard" className="block">
+                                         <Button 
+                                             variant="outline" 
+                                             className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white px-6 py-2 rounded-full font-semibold transition-all duration-200 w-full group text-sm"
+                                         >
+                                             <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-200" />
+                                             Créer du contenu
+                                         </Button>
+                                    </Link>
+                                )}
+                                </div>
+                            </motion.div>
                     </div>
                 )}
             </div>
-
         </div>
     );
 }

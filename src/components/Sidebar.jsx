@@ -9,7 +9,8 @@ import {
   BarChart3,
   LogIn,
   UserPlus,
-  Wallet
+  Wallet,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -21,17 +22,19 @@ const Sidebar = ({ isOpen, onClose }) => {
     { icon: Home, label: 'Accueil', path: '/' },
   ];
 
-  // Si l'utilisateur est connecté
-  if (user) {
-    menuItems.push({ icon: User, label: 'Profil', path: '/profile' });
-    
-    if (user?.is_creator) {
-      menuItems.push({ icon: BarChart3, label: 'Tableau de bord', path: '/dashboard' });
-      menuItems.push({ icon: Wallet, label: 'Cashout', path: '/cashout' });
-    } else {
-      menuItems.push({ icon: Star, label: 'Devenir créateur', path: '/become-creator' });
-    }
-  } else {
+        // Si l'utilisateur est connecté
+        if (user) {
+          menuItems.push({ icon: User, label: 'Profil', path: '/profile' });
+          
+          if (user?.role === 'admin') {
+            menuItems.push({ icon: Shield, label: 'Modération', path: '/moderation' });
+          } else if (user?.is_creator) {
+            menuItems.push({ icon: BarChart3, label: 'Tableau de bord', path: '/dashboard' });
+            menuItems.push({ icon: Wallet, label: 'Cashout', path: '/cashout' });
+          } else {
+            menuItems.push({ icon: Star, label: 'Devenir créateur', path: '/become-creator' });
+          }
+        } else {
     // Si l'utilisateur n'est pas connecté
     menuItems.push({ icon: LogIn, label: 'Connexion', path: '/login' });
     menuItems.push({ icon: UserPlus, label: 'Inscription', path: '/register' });

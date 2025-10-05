@@ -15,6 +15,8 @@ import CreatorDashboard from './pages/CreatorDashboard'
 import Profile from './pages/Profile'
 import BecomeCreator from './pages/BecomeCreator'
 import Cashout from './pages/Cashout'
+import PaymentCallback from './pages/PaymentCallback'
+import ModerationPanel from './pages/ModerationPanel'
 
 // Components
 import RequireAuth from './components/RequireAuth'
@@ -32,11 +34,11 @@ function App() {
                     
                     <div className="min-h-screen bg-black text-white">
                         <Routes>
-                            <Route path="/" element={
-                                <Layout>
-                                    <HomePage />
-                                </Layout>
-                            } />
+                                <Route path="/" element={
+                                    <Layout>
+                                        <HomePage />
+                                    </Layout>
+                                } />
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
                             
@@ -71,6 +73,17 @@ function App() {
                                     </Layout>
                                 </RequireAuth>
                             } />
+                            
+                            <Route path="/moderation" element={
+                                <RequireAuth>
+                                    <Layout>
+                                        <ModerationPanel />
+                                    </Layout>
+                                </RequireAuth>
+                            } />
+                            
+                            {/* Route de callback pour les paiements */}
+                            <Route path="/payment-callback" element={<PaymentCallback />} />
                             
                             {/* 404 route */}
                             <Route path="*" element={
