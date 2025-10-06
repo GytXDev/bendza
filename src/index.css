@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animations shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 /* Styles personnalisés pour react-phone-number-input */
 .phone-input-custom {
   --PhoneInput-color--focus: #f97316;

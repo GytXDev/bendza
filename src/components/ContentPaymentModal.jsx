@@ -215,17 +215,17 @@ const ContentPaymentModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent 
-        className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700"
+        className="w-[95vw] max-w-[425px] max-h-[90vh] overflow-y-auto bg-gray-900 text-white border-gray-700 mx-4 sm:mx-auto"
         aria-describedby="content-payment-description"
       >
         <DialogHeader>
           <p id="content-payment-description" className="sr-only">
             Modal de paiement pour accéder au contenu premium
           </p>
-          <DialogTitle className="text-2xl font-bold text-orange-500">
+          <DialogTitle className="text-xl sm:text-2xl font-bold text-orange-500">
             Paiement Mobile Money
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-sm sm:text-base text-gray-400">
             Débloquez ce contenu pour {amount} FCFA. Entrez votre numéro de téléphone Mobile Money.
           </DialogDescription>
         </DialogHeader>

@@ -12,6 +12,7 @@ import { fusionPayService } from '../lib/fusionpay';
 import ContentPaymentModal from '../components/ContentPaymentModal';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import CustomImagePlayer from '../components/CustomImagePlayer';
+import { ContentCardShimmer, ContentListShimmer } from '../components/ui/shimmer';
 
 function HomePage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -275,19 +276,23 @@ function HomePage() {
         });
     };
 
-    // Afficher un loader pendant le chargement de l'authentification
+    // Afficher un shimmer pendant le chargement de l'authentification
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-white text-lg"
-                    >
-                        Chargement de votre fil d'actualité...
-                    </motion.p>
+            <div className="min-h-screen bg-black">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-16 md:mt-0">
+                    {/* Header shimmer */}
+                    <div className="mb-6">
+                        <div className="h-8 w-64 bg-gray-800 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-48 bg-gray-800 rounded animate-pulse"></div>
+                    </div>
+                    
+                    {/* Content grid shimmer */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <ContentCardShimmer key={index} />
+                        ))}
+                    </div>
                 </div>
             </div>
         );
@@ -295,16 +300,20 @@ function HomePage() {
 
     if (contentLoading && !loadingTimeout) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-white text-lg"
-                    >
-                        Chargement du fil d'actualité...
-                    </motion.p>
+            <div className="min-h-screen bg-black">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-16 md:mt-0">
+                    {/* Header shimmer */}
+                    <div className="mb-6">
+                        <div className="h-8 w-64 bg-gray-800 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-48 bg-gray-800 rounded animate-pulse"></div>
+                    </div>
+                    
+                    {/* Content grid shimmer */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <ContentCardShimmer key={index} />
+                        ))}
+                    </div>
                 </div>
             </div>
         );
@@ -368,7 +377,7 @@ function HomePage() {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="bg-gradient-to-r from-gray-900/80 to-gray-800/60 backdrop-blur-md border-b border-white/10"
+                    className="bg-gradient-to-r from-gray-900/80 to-gray-800/60 backdrop-blur-md border-b border-white/10 mt-16 md:mt-0"
                 >
                     <div className="max-w-sm mx-auto px-4 py-3">
                     <div className="flex items-center justify-between">
@@ -392,7 +401,7 @@ function HomePage() {
             
 
             {/* Fil d'actualité format 9:16 */}
-            <div className="max-w-md md:max-w-lg lg:max-w-xl mx-auto mt-8 md:mt-4 px-4 pb-8">
+            <div className="max-w-md md:max-w-lg lg:max-w-xl mx-auto mt-4 md:mt-4 px-4 pb-8">
                 {content.length > 0 ? (
                     <div className="space-y-6">
                         {content.map((item, index) => {
@@ -613,10 +622,11 @@ function HomePage() {
                             <div className="space-y-3">
                                  <Button 
                                      onClick={handleRefresh} 
-                                     className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-200 w-full text-sm"
+                                     disabled={refreshing}
+                                     className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-200 w-full text-sm disabled:opacity-50"
                                  >
-                                     <RefreshCw className="w-4 h-4 mr-2" />
-                                     Actualiser le fil
+                                     <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                                     {refreshing ? 'Actualisation...' : 'Actualiser le fil'}
                                  </Button>
                                 {user && user?.is_creator && (
                                     <Link to="/dashboard" className="block">

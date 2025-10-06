@@ -209,7 +209,7 @@ function Profile() {
         <meta name="description" content="Gérez votre profil BENDZA" />
       </Helmet>
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto px-4 py-8 mt-16 md:mt-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

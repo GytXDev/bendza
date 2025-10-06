@@ -282,12 +282,12 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
       onClose();
     }}>
       <DialogContent 
-        className="sm:max-w-4xl max-h-[95vh] overflow-y-auto"
+        className="w-[95vw] sm:max-w-4xl max-h-[95vh] overflow-y-auto bg-gray-900 text-white border-gray-700 mx-4 sm:mx-auto"
         aria-describedby="edit-content-description"
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Edit className="text-orange-500" size={24} />
+          <DialogTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+            <Edit className="text-orange-500" size={20} />
             <span>Modifier le contenu</span>
           </DialogTitle>
           <p id="edit-content-description" className="text-sm text-gray-400 mt-2">

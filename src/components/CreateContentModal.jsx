@@ -258,15 +258,15 @@ const CreateContentModal = ({ isOpen, onClose, onContentCreated }) => {
       onClose();
     }}>
       <DialogContent 
-        className="sm:max-w-4xl max-h-[95vh] overflow-y-auto"
+        className="w-[95vw] sm:max-w-4xl max-h-[95vh] overflow-y-auto bg-gray-900 text-white border-gray-700 mx-4 sm:mx-auto"
         aria-describedby="create-content-description"
       >
         <DialogHeader>
           <p id="create-content-description" className="sr-only">
             Créer un nouveau contenu avec titre, description, prix et fichier média
           </p>
-          <DialogTitle className="flex items-center space-x-2">
-            <Plus className="text-orange-500" size={24} />
+          <DialogTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+            <Plus className="text-orange-500" size={20} />
             <span>Créer du contenu</span>
           </DialogTitle>
         </DialogHeader>

@@ -64,7 +64,7 @@ const ConfirmationModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="sm:max-w-md"
+        className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto bg-gray-900 text-white border-gray-700 mx-4 sm:mx-auto"
         aria-describedby="confirmation-description"
       >
         <DialogHeader>

@@ -20,6 +20,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import CustomImagePlayer from '../components/CustomImagePlayer';
+import { ContentCardShimmer } from '../components/ui/shimmer';
 
 function MyPurchases() {
   const { user } = useAuth();
@@ -121,8 +122,21 @@ function MyPurchases() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-black text-white">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-16 md:mt-0">
+          {/* Header shimmer */}
+          <div className="mb-6">
+            <div className="h-8 w-64 bg-gray-800 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-48 bg-gray-800 rounded animate-pulse"></div>
+          </div>
+          
+          {/* Purchases grid shimmer */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <ContentCardShimmer key={index} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

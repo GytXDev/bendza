@@ -153,17 +153,17 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700"
+        className="w-[95vw] max-w-[425px] max-h-[90vh] overflow-y-auto bg-gray-900 text-white border-gray-700 mx-4 sm:mx-auto"
         aria-describedby="payment-description"
       >
         <DialogHeader>
           <p id="payment-description" className="sr-only">
             Modal de paiement pour acheter du contenu
           </p>
-          <DialogTitle className="text-2xl font-bold text-orange-500">
+          <DialogTitle className="text-xl sm:text-2xl font-bold text-orange-500">
             {getPaymentTitle()}
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-sm sm:text-base text-gray-400">
             {getPaymentDescription()}
           </DialogDescription>
         </DialogHeader>
@@ -212,19 +212,19 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
             </div>
 
             {/* Boutons d'action */}
-            <div className="flex space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 type="button"
                 onClick={onClose}
                 variant="outline"
-                className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
+                className="w-full sm:flex-1 border-gray-700 text-gray-300 hover:bg-gray-800 py-3 sm:py-2"
                 disabled={loading}
               >
                 Annuler
               </Button>
               <Button 
                 type="submit" 
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" 
+                className="w-full sm:flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 sm:py-2" 
                 disabled={loading}
               >
                 {loading ? (
@@ -244,35 +244,35 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, type, creatorName, c
             <p>Paiement sécurisé via FusionPay</p>
             
             {/* Images des possibilités de paiement */}
-            <div className="flex justify-center items-center space-x-5 mt-3">
+            <div className="flex justify-center items-center flex-wrap gap-2 sm:gap-3 mt-3">
               <img 
                 src="/payment_logo/airtel_money.jpg" 
                 alt="Airtel Money" 
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
               
               <img 
                 src="/payment_logo/moov_money.png" 
                 alt="Moov Money" 
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
               
               <img 
                 src="/payment_logo/mtn.jpg" 
                 alt="MTN Mobile Money" 
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
               
               <img 
                 src="/payment_logo/wave.png" 
                 alt="Wave" 
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
               
               <img 
                 src="/payment_logo/orange_money.jpg" 
                 alt="Orange Money" 
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
             </div>
           </div>
