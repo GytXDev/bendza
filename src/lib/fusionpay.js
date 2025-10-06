@@ -5,6 +5,8 @@ const FUSIONPAY_API_URL = 'https://www.pay.moneyfusion.net/Bendza/87899217408b03
 const RETURN_URL = `${window.location.origin}/payment-callback`;
 const WEBHOOK_URL = `${window.location.origin}/api/webhook/fusionpay`;
 
+// Configuration FusionPay - URL directe pour éviter les problèmes en production
+
 // Types pour les données de paiement créateur
 // (Commentaire TypeScript pour référence)
 // interface CreatorPaymentData {
@@ -25,8 +27,6 @@ class FusionPayService {
    */
   async initiateCreatorPayment(paymentData) {
     try {
-      console.log('FusionPay: Starting payment initiation with URL:', FUSIONPAY_API_URL);
-      console.log('FusionPay: Payment data:', paymentData);
 
       // Déterminer le type d'article selon le type de paiement
       let articleName = "Activation compte créateur";
@@ -50,12 +50,8 @@ class FusionPayService {
         .returnUrl(RETURN_URL)
         .webhookUrl(WEBHOOK_URL);
 
-      console.log('FusionPay: Configuration completed, making payment...');
-      
       // Effectuer le paiement
       const response = await this.fusionPay.makePayment();
-      
-      console.log('FusionPay: Payment response:', response);
       
       // Vérifier que l'URL existe
       if (!response?.url) {
