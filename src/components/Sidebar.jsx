@@ -41,10 +41,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             menuItems.push({ icon: BarChart3, label: 'Tableau de bord', path: '/dashboard' });
             menuItems.push({ icon: Wallet, label: 'Cashout', path: '/cashout' });
           } else {
-            // Seulement si pas créateur ET pas admin
-            if (user?.role !== 'admin') {
-              menuItems.push({ icon: Star, label: 'Devenir créateur', path: '/become-creator' });
-            }
+            // Tous les utilisateurs (y compris admin) peuvent devenir créateur
+            menuItems.push({ icon: Star, label: 'Devenir créateur', path: '/become-creator' });
           }
         } else {
     // Si l'utilisateur n'est pas connecté
