@@ -44,8 +44,6 @@ function AdminWithdrawals() {
     try {
       setLoading(true);
       
-      console.log('AdminWithdrawals: User role:', user?.role);
-      console.log('AdminWithdrawals: User ID:', user?.id);
       
       // Vérifier que l'utilisateur est admin
       if (user?.role !== 'admin') {
@@ -59,11 +57,8 @@ function AdminWithdrawals() {
         .select('*')
         .order('requested_at', { ascending: false })
         .limit(1000);
-      
-      console.log('AdminWithdrawals: All payouts count:', allPayouts?.length || 0);
-      
+    
       if (allError) {
-        console.error('AdminWithdrawals: Error fetching all payouts:', allError);
         throw allError;
       }
       
@@ -84,8 +79,6 @@ function AdminWithdrawals() {
 
       if (error) throw error;
 
-      console.log('AdminWithdrawals: Fetched payouts:', data?.length || 0);
-      console.log('AdminWithdrawals: Sample payout:', data?.[0]);
       setWithdrawals(data || []);
     } catch (error) {
       console.error('Error fetching withdrawals:', error);

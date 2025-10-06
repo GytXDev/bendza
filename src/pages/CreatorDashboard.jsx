@@ -66,6 +66,7 @@ function CreatorDashboard() {
         }
     };
 
+
     const fetchStats = async () => {
         if (!user) return;
 
@@ -112,6 +113,8 @@ function CreatorDashboard() {
             // Utiliser le service de suppression complète
             const { imageUploadService } = await import('../lib/imageUpload');
             const deletionResults = await imageUploadService.deleteContentCompletely(contentToDelete.id, contentToDelete.url);
+
+            // La suppression n'est plus bloquée - continuer avec le traitement
 
             // Vérifier les résultats
             const hasErrors = deletionResults.errors.length > 0;

@@ -62,7 +62,6 @@ export const optimizeImage = async (file, options = {}) => {
                 lastModified: Date.now()
               })
               
-              console.log(`Image optimisée: ${file.size} → ${blob.size} bytes (${Math.round((1 - blob.size / file.size) * 100)}% de réduction)`)
               resolve(optimizedFile)
             } else {
               reject(new Error('Erreur lors de l\'optimisation de l\'image'))
@@ -120,7 +119,6 @@ export const optimizeVideo = async (file, options = {}) => {
                 lastModified: Date.now()
               })
               
-              console.log(`Vidéo analysée: ${file.size} bytes, miniature générée: ${thumbnailBlob.size} bytes`)
               resolve({
                 originalFile: file,
                 thumbnailFile,

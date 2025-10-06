@@ -56,7 +56,6 @@ function Login() {
 
       // Ne pas afficher le message de succès ici
       // L'AuthContext gérera la redirection automatiquement
-      console.log('Google sign-in initiated, waiting for auth state change...')
       
     } catch (error) {
       console.error('Google sign-in error:', error)

@@ -43,7 +43,6 @@ function HomePage() {
             });
             navigate('/');
         } catch (error) {
-            console.error('Erreur de déconnexion:', error);
             toast({
                 title: "Erreur de déconnexion",
                 description: "Une erreur s'est produite lors de la déconnexion",
@@ -88,7 +87,6 @@ function HomePage() {
                     .limit(20);
 
                 if (contentError) {
-                    console.error('Error loading content:', contentError);
                     setContent([]);
                 } else {
                     setContent(contentData || []);
@@ -107,12 +105,10 @@ function HomePage() {
                             setPurchasedContent(purchasedIds);
                         }
                     } catch (error) {
-                        console.error('Error loading purchases:', error);
                         // Erreur silencieuse pour les achats
                     }
                 }
             } catch (error) {
-                console.error('Error in loadData:', error);
                 setContent([]);
             toast({
                 title: "Erreur de chargement",
@@ -199,7 +195,6 @@ function HomePage() {
             }
 
         } catch (error) {
-            console.error('HomePage: Payment initiation failed:', error);
             toast({
                 title: "Erreur de paiement",
                 description: error.message || "Impossible d'initier le paiement",
@@ -250,7 +245,6 @@ function HomePage() {
             await handlePurchase(contentId, price);
 
         } catch (error) {
-            console.error('Erreur lors de la vue du contenu:', error);
             toast({
                 title: "Erreur",
                 description: "Impossible d'accéder au contenu",
@@ -447,6 +441,8 @@ function HomePage() {
                                                 src={item.url || 'https://picsum.photos/400/600?random=' + item.id}
                                                 alt={item.title}
                                                 isPurchased={purchasedContent.has(item.id) || item.price === 0}
+                                                contentId={item.id}
+                                                creatorId={item.creator_id}
                                                 onViewContent={() => {
                                                     if (!purchasedContent.has(item.id)) {
                                                         handleViewContent(item.id, item.price);
@@ -461,6 +457,8 @@ function HomePage() {
                                                 src={item.url}
                                                 poster={item.url}
                                                 isPurchased={purchasedContent.has(item.id) || item.price === 0}
+                                                contentId={item.id}
+                                                creatorId={item.creator_id}
                                                 onPlay={() => {
                                                     if (!purchasedContent.has(item.id)) {
                                                         handleViewContent(item.id, item.price);

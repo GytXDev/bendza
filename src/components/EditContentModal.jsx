@@ -216,14 +216,9 @@ const EditContentModal = ({ isOpen, onClose, content, onContentUpdated }) => {
         // Supprimer l'ancien fichier si possible
         if (content.url) {
           try {
-            console.log('Suppression de l\'ancien média...');
             deletionResult = await imageUploadService.deleteOldImage(content.url);
             
-            if (!deletionResult.success) {
-              console.warn('Échec de la suppression de l\'ancien média:', deletionResult.error);
-            } else {
-              console.log('Ancien média supprimé avec succès');
-            }
+            
           } catch (deleteError) {
             console.warn('Erreur lors de la suppression de l\'ancien média:', deleteError);
             deletionResult = { success: false, error: deleteError.message };

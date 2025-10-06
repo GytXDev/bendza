@@ -251,7 +251,6 @@ const MultipleMediaUpload = ({ contentId, onMediaAdded, existingMedia = [] }) =>
                       try {
                         // Supprimer le fichier du storage
                         if (media.media_url) {
-                          console.log('Suppression du média du storage...');
                           const deletionResult = await imageUploadService.deleteOldImage(media.media_url);
                           
                           if (!deletionResult.success) {
@@ -262,7 +261,6 @@ const MultipleMediaUpload = ({ contentId, onMediaAdded, existingMedia = [] }) =>
                               variant: "destructive",
                             });
                           } else {
-                            console.log('Fichier supprimé avec succès');
                           }
                         }
 

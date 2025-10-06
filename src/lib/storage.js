@@ -106,7 +106,6 @@ export const uploadContent = async (file, creatorId, contentType = 'content', op
 
     // Optimiser le fichier si nécessaire
     if (needsOptimization(file) && !options.skipOptimization) {
-      console.log('Optimisation du fichier en cours...')
       const optimizationResult = await optimizeMediaFile(file, options.optimization)
       
       fileToUpload = optimizationResult.optimizedFile
@@ -118,7 +117,6 @@ export const uploadContent = async (file, creatorId, contentType = 'content', op
         type: optimizationResult.type
       }
       
-      console.log(`Fichier optimisé: ${formatFileSize(file.size)} → ${formatFileSize(fileToUpload.size)} (${optimizationInfo.reduction}% de réduction)`)
     }
 
     // Upload du fichier principal
@@ -339,7 +337,6 @@ export const cleanupTempFiles = async () => {
 
     if (filesToDelete.length > 0) {
       await deleteFile(STORAGE_BUCKETS.TEMP, filesToDelete)
-      console.log(`${filesToDelete.length} fichiers temporaires supprimés`)
     }
   } catch (error) {
     console.error('Erreur nettoyage fichiers temporaires:', error)
@@ -357,7 +354,6 @@ export const deleteFileByPath = async (filePath, bucket = STORAGE_BUCKETS.CONTEN
 
     if (error) throw error
 
-    console.log(`Fichier supprimé: ${filePath}`)
     return true
   } catch (error) {
     console.error('Erreur suppression fichier:', error)
@@ -376,7 +372,6 @@ export const deleteFiles = async (filePaths, bucket = STORAGE_BUCKETS.CONTENT) =
 
     if (error) throw error
 
-    console.log(`${filePaths.length} fichiers supprimés`)
     return true
   } catch (error) {
     console.error('Erreur suppression fichiers:', error)

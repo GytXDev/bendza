@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw } from 'lucide-react';
 import { getSignedUrl } from '../lib/storage';
+import ViewTracker from './ViewTracker';
 
 const CustomVideoPlayer = ({ 
   src, 
@@ -9,7 +10,9 @@ const CustomVideoPlayer = ({
   onPlay, 
   onViewContent,
   className = "",
-  blurEffect = false 
+  blurEffect = false,
+  contentId,
+  creatorId
 }) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -93,7 +96,7 @@ const CustomVideoPlayer = ({
       // Gérer le mode preview - revenir au début après previewEndTime secondes
       if (isPreviewMode && video.currentTime >= previewEndTime) {
         video.currentTime = 0;
-        video.play().catch(console.error);
+        video.play().catch(() => {});
       }
     };
 
@@ -211,7 +214,7 @@ const CustomVideoPlayer = ({
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
-      video.requestFullscreen().catch(console.error);
+      video.requestFullscreen().catch(() => {});
     }
   };
 
@@ -386,6 +389,16 @@ const CustomVideoPlayer = ({
         <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded-full">
           <span className="text-white text-xs font-medium">Preview</span>
         </div>
+      )}
+
+      {/* Tracker de vues - seulement si le contenu est acheté et que les IDs sont fournis */}
+      {isPurchased && contentId && (
+        <ViewTracker 
+          contentId={contentId}
+          creatorId={creatorId}
+          minWatchTime={10}
+          autoTrack={true}
+        />
       )}
     </div>
   );

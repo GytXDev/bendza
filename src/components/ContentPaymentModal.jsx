@@ -87,12 +87,10 @@ const ContentPaymentModal = ({
 
     // Note: La vérification des achats multiples sera faite côté serveur dans PaymentCallback
     // pour éviter les problèmes de permissions RLS côté client
-    console.log('ContentPaymentModal: Vérification des achats déléguée au serveur');
 
     setLoading(true);
 
     try {
-      console.log('ContentPaymentModal: Initiating FusionPay payment');
 
       const clientName = user.name || user.email.split('@')[0];
       const userId = user.id;
@@ -109,7 +107,6 @@ const ContentPaymentModal = ({
       }
 
       // Vérifier que le contenu existe et a un creator_id valide
-      console.log('ContentPaymentModal: Vérification du contenu...');
       try {
         const { data: contentData, error: contentError } = await supabase
           .from('content')
@@ -147,13 +144,7 @@ const ContentPaymentModal = ({
           return;
         }
 
-        console.log('ContentPaymentModal: Contenu validé:', {
-          id: contentData.id,
-          title: contentData.title,
-          creator_id: contentData.creator_id,
-          price: contentData.price,
-          status: contentData.status
-        });
+      
 
       } catch (error) {
         console.error('ContentPaymentModal: Erreur lors de la vérification du contenu:', error);
@@ -169,7 +160,6 @@ const ContentPaymentModal = ({
       sessionStorage.setItem('pendingContentId', contentId);
       sessionStorage.setItem('pendingContentTitle', contentTitle);
       sessionStorage.setItem('pendingAmount', amount.toString());
-      console.log('ContentPaymentModal: Stored payment data in sessionStorage:', { contentId, contentTitle, amount });
 
       const paymentData = {
         userId,
@@ -184,13 +174,9 @@ const ContentPaymentModal = ({
         return_url: `${window.location.origin}/payment-callback`
       };
 
-      console.log('ContentPaymentModal: Sending payment data:', paymentData);
-
-
       const result = await fusionPayService.initiateCreatorPayment(paymentData);
 
       if (result.success && result.paymentUrl) {
-        console.log('ContentPaymentModal: Payment initiated, redirecting to:', result.paymentUrl);
         toast({
           title: "Redirection vers le paiement",
           description: "Vous allez être redirigé vers la page de paiement Mobile Money"

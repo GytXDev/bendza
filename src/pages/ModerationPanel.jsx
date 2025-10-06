@@ -279,16 +279,7 @@ function ModerationPanel() {
                                     )}
                                     
                                     {/* Aperçu du média */}
-                                    <div className="mb-3 md:mb-4">
-                                        {/* Debug logs */}
-                                        {console.log('ModerationPanel: Media debug:', {
-                                            id: item.id,
-                                            type: item.type,
-                                            url: item.url,
-                                            title: item.title,
-                                            url_length: item.url?.length || 0
-                                        })}
-                                        
+                                    <div className="mb-3 md:mb-4">     
                                         {item.type === 'image' && (
                                             <img 
                                                 src={item.url} 
@@ -305,8 +296,6 @@ function ModerationPanel() {
                                                         controls
                                                         preload="metadata"
                                                         className="w-full max-w-sm md:max-w-xs max-h-32 md:max-h-48 rounded-lg bg-black"
-                                                        onLoadStart={() => console.log('Video load started:', item.url)}
-                                                        onLoadedData={() => console.log('Video data loaded:', item.url)}
                                                         onError={(e) => {
                                                             console.error('Video load error:', {
                                                                 url: item.url,

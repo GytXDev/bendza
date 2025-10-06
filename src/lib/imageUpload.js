@@ -96,7 +96,6 @@ export class ImageUploadService {
      */
     async deleteOldImage(imageUrl) {
         if (!imageUrl) {
-            console.log('Aucune ancienne image à supprimer')
             return { success: true, message: 'Aucune ancienne image' }
         }
 
@@ -105,7 +104,6 @@ export class ImageUploadService {
             const fileName = imageUrl.split('/').pop().split('?')[0]
 
             if (!fileName || fileName === 'default-avatar.png') {
-                console.log('Image par défaut ou nom de fichier invalide, suppression ignorée')
                 return { success: true, message: 'Image par défaut ignorée' }
             }
 
@@ -121,21 +119,130 @@ export class ImageUploadService {
                 bucketName = 'thumbnails'
             }
 
-            console.log(`Tentative de suppression de l'ancienne image: ${fileName} du bucket ${bucketName}`)
-
-            const { error } = await supabase.storage
-                .from(bucketName)
-                .remove([fileName])
-
-            if (error) {
-                console.warn('Impossible de supprimer l\'ancienne image:', error)
-                return { success: false, error: error.message, fileName }
+            // Pour le bucket content, essayer différents chemins possibles
+            if (bucketName === 'content') {
+                // Essayer de supprimer avec le chemin complet depuis l'URL
+                const urlParts = imageUrl.split('/')
+                const bucketIndex = urlParts.findIndex(part => part === 'content')
+                if (bucketIndex !== -1 && bucketIndex < urlParts.length - 1) {
+                    // Reconstruire le chemin relatif dans le bucket
+                    const relativePath = urlParts.slice(bucketIndex + 1).join('/')
+                    
+                    const { error: pathError } = await supabase.storage
+                        .from(bucketName)
+                        .remove([relativePath])
+                    
+                    if (!pathError) {
+                        return { success: true, fileName: relativePath, bucket: bucketName }
+                    }
+                }
+                
+                // Essayer avec juste le nom du fichier
+                const { error: fileNameError } = await supabase.storage
+                    .from(bucketName)
+                    .remove([fileName])
+                
+                if (!fileNameError) {
+                    return { success: true, fileName, bucket: bucketName }
+                }
+                
+                // Essayer de lister les fichiers pour trouver le bon chemin
+                try {
+                    const { data: files, error: listError } = await supabase.storage
+                        .from(bucketName)
+                        .list('', { search: fileName })
+                    
+                    if (!listError && files && files.length > 0) {
+                        for (const file of files) {
+                            if (file.name === fileName) {
+                                const { error: deleteError } = await supabase.storage
+                                    .from(bucketName)
+                                    .remove([file.name])
+                                
+                                if (!deleteError) {
+                                    return { success: true, fileName: file.name, bucket: bucketName }
+                                }
+                            }
+                        }
+                    }
+                } catch (listErr) {
+                    // Ignorer les erreurs de liste
+                }
+                
+                return { success: false, error: 'Impossible de supprimer le fichier du bucket content', fileName }
             } else {
-                console.log('Ancienne image supprimée avec succès:', fileName)
-                return { success: true, fileName }
+                // Pour les autres buckets, utiliser la méthode normale
+                const { error } = await supabase.storage
+                    .from(bucketName)
+                    .remove([fileName])
+
+                if (error) {
+                    return { success: false, error: error.message, fileName }
+                } else {
+                    return { success: true, fileName, bucket: bucketName }
+                }
             }
         } catch (error) {
-            console.warn('Erreur lors de la suppression de l\'ancienne image:', error)
+            return { success: false, error: error.message, fileName: imageUrl.split('/').pop() }
+        }
+    }
+
+    /**
+     * Supprime un fichier de contenu avec la structure content/id_utilisateur/content/nom_du_fichier
+     */
+    async deleteContentFile(imageUrl, userId) {
+        if (!imageUrl || !userId) {
+            return { success: false, error: 'Paramètres manquants' }
+        }
+
+        try {
+            // Extraire le nom du fichier de l'URL
+            const fileName = imageUrl.split('/').pop().split('?')[0]
+            
+            if (!fileName) {
+                return { success: false, error: 'Nom de fichier invalide' }
+            }
+
+            // Essayer différents chemins possibles dans le bucket content
+            const possiblePaths = [
+                `${userId}/content/${fileName}`,  // Structure principale
+                `content/${userId}/${fileName}`,  // Structure alternative
+                `${userId}/${fileName}`,          // Structure simplifiée
+                fileName                          // Juste le nom du fichier
+            ]
+
+            for (const path of possiblePaths) {
+                const { error } = await supabase.storage
+                    .from('content')
+                    .remove([path])
+                
+                if (!error) {
+                    return { success: true, fileName: path, bucket: 'content' }
+                }
+            }
+
+            // Si aucun chemin ne fonctionne, essayer de lister et supprimer
+            const { data: files, error: listError } = await supabase.storage
+                .from('content')
+                .list('', { search: fileName })
+            
+            if (!listError && files && files.length > 0) {
+                for (const file of files) {
+                    if (file.name === fileName) {
+                        const { error: deleteError } = await supabase.storage
+                            .from('content')
+                            .remove([file.name])
+                        
+                        if (!deleteError) {
+                            return { success: true, fileName: file.name, bucket: 'content' }
+                        }
+                    }
+                }
+            }
+
+            return { success: false, error: 'Fichier non trouvé ou impossible à supprimer', fileName }
+            
+        } catch (error) {
             return { success: false, error: error.message, fileName: imageUrl.split('/').pop() }
         }
     }
@@ -163,19 +270,13 @@ export class ImageUploadService {
             this.validateFile(file)
 
             // Compression
-            console.log('Compression de l\'image...')
             const compressedFile = await this.compressImage(file)
-            console.log('Image compressée:', {
-                original: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
-                compressed: `${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`
-            })
+           
 
             // Génération du nom de fichier
             const fileName = this.generateFileName(userId, file.name)
-            console.log('Nom de fichier généré:', fileName)
 
             // Upload vers Supabase Storage
-            console.log(`Upload vers le stockage (bucket: ${bucketName})...`)
             const { data, error } = await supabase.storage
                 .from(bucketName)
                 .upload(fileName, compressedFile, {
@@ -193,12 +294,10 @@ export class ImageUploadService {
                 .getPublicUrl(fileName)
 
             const publicUrl = urlData.publicUrl
-            console.log('Upload réussi:', publicUrl)
 
             // Supprimer l'ancienne image (en arrière-plan)
             let deletionResult = null
             if (currentImageUrl) {
-                console.log('Suppression de l\'ancienne image...')
                 try {
                     deletionResult = await this.deleteOldImage(currentImageUrl)
                     if (!deletionResult.success) {
@@ -241,7 +340,6 @@ export class ImageUploadService {
                 throw new Error(`Erreur de suppression: ${error.message}`)
             }
 
-            console.log('Image supprimée:', fileName)
             return true
 
         } catch (error) {
@@ -256,7 +354,6 @@ export class ImageUploadService {
      */
     async cleanupOrphanedImages(userId, bucketName = 'avatars') {
         try {
-            console.log(`Nettoyage des images orphelines pour l'utilisateur ${userId}...`)
             
             // Lister tous les fichiers du bucket
             const { data: files, error: listError } = await supabase.storage
@@ -273,7 +370,6 @@ export class ImageUploadService {
             const userFiles = files.filter(file => file.name.startsWith(`${userId}_`))
             
             if (userFiles.length === 0) {
-                console.log('Aucune image orpheline trouvée')
                 return { cleaned: 0, total: 0 }
             }
 
@@ -287,7 +383,6 @@ export class ImageUploadService {
             const filesToDelete = sortedFiles.slice(1) // Garder la première (plus récente)
             
             if (filesToDelete.length === 0) {
-                console.log('Aucune image orpheline à supprimer')
                 return { cleaned: 0, total: userFiles.length }
             }
 
@@ -301,7 +396,6 @@ export class ImageUploadService {
                 throw new Error(`Erreur lors de la suppression: ${deleteError.message}`)
             }
 
-            console.log(`✅ ${filesToDelete.length} image(s) orpheline(s) supprimée(s)`)
             return { 
                 cleaned: filesToDelete.length, 
                 total: userFiles.length,
@@ -325,16 +419,13 @@ export class ImageUploadService {
             contentDeleted: false,
             transactionsDeleted: false,
             purchasesDeleted: false,
-            mediaDeleted: false,
             storageDeleted: false,
             errors: [],
             blocked: false
         };
 
         try {
-            console.log(`Suppression complète du contenu ${contentId}...`);
-
-            // 1. Vérifier d'abord s'il y a des transactions ou purchases liées
+            // 1. Compter les transactions et purchases pour information (mais ne pas bloquer)
             try {
                 const { data: transactions, error: transactionsError } = await supabase
                     .from('transactions')
@@ -346,25 +437,9 @@ export class ImageUploadService {
                     .select('id')
                     .eq('content_id', contentId);
 
-                if (transactionsError || purchasesError) {
-                    console.warn('Erreur lors de la vérification des transactions/purchases:', transactionsError || purchasesError);
-                } else {
-                    const transactionCount = transactions?.length || 0;
-                    const purchaseCount = purchases?.length || 0;
-                    
-                    console.log(`Trouvé ${transactionCount} transaction(s) et ${purchaseCount} purchase(s)`);
-                    
-                    // Si il y a des transactions ou purchases, bloquer la suppression
-                    if (transactionCount > 0 || purchaseCount > 0) {
-                        results.blocked = true;
-                        results.errors.push(`Impossible de supprimer le contenu car il contient ${transactionCount} transaction(s) et ${purchaseCount} achat(s) actif(s)`);
-                        console.log('❌ Suppression bloquée: contenu avec transactions/purchases actives');
-                        return results;
-                    }
-                }
+                // Ignorer les erreurs de vérification
             } catch (error) {
-                console.warn('Erreur lors de la vérification des transactions/purchases:', error);
-                results.errors.push(`Vérification: ${error.message}`);
+                // Ignorer les erreurs de vérification
             }
 
             // 2. Supprimer d'abord les purchases (ils référencent les transactions)
@@ -378,7 +453,6 @@ export class ImageUploadService {
                     results.errors.push(`Purchases: ${purchasesError.message}`);
                 } else {
                     results.purchasesDeleted = true;
-                    console.log('✅ Purchases supprimées');
                 }
             } catch (error) {
                 results.errors.push(`Purchases: ${error.message}`);
@@ -393,170 +467,136 @@ export class ImageUploadService {
 
                 if (transactionsError) {
                     results.errors.push(`Transactions: ${transactionsError.message}`);
-                    console.warn('Erreur suppression transactions:', transactionsError);
                 } else {
                     results.transactionsDeleted = true;
-                    console.log('✅ Transactions supprimées');
                 }
             } catch (error) {
                 results.errors.push(`Transactions: ${error.message}`);
-                console.warn('Erreur suppression transactions:', error);
             }
 
-            // 4. Supprimer les médias multiples
+            // 3.5. Vérifier qu'il n'y a plus de transactions référençant ce contenu
             try {
-                const { error: mediaError } = await supabase
-                    .from('content_media')
-                    .delete()
+                const { data: remainingTransactions, error: checkError } = await supabase
+                    .from('transactions')
+                    .select('id')
                     .eq('content_id', contentId);
 
-                if (mediaError) {
-                    results.errors.push(`Médias multiples: ${mediaError.message}`);
-                } else {
-                    results.mediaDeleted = true;
-                    console.log('Médias multiples supprimés');
+                if (!checkError && remainingTransactions && remainingTransactions.length > 0) {
+                    // Forcer la suppression des transactions restantes
+                    const { error: forceDeleteError } = await supabase
+                        .from('transactions')
+                        .delete()
+                        .eq('content_id', contentId);
+                    
+                    if (forceDeleteError) {
+                        results.errors.push(`Transactions forcées: ${forceDeleteError.message}`);
+                    } else {
+                        results.transactionsDeleted = true;
+                    }
                 }
-            } catch (error) {
-                results.errors.push(`Médias multiples: ${error.message}`);
+            } catch (checkErr) {
+                // Ignorer les erreurs de vérification
             }
 
-            // 5. Supprimer tous les fichiers média du storage
+            // 4. Supprimer le fichier média principal du storage
             try {
-                // Supprimer le fichier principal
                 if (contentUrl) {
-                    const deletionResult = await this.deleteOldImage(contentUrl);
+                    // Récupérer l'ID du créateur pour construire le bon chemin
+                    let creatorId = null;
+                    try {
+                        const { data: contentData, error: contentError } = await supabase
+                            .from('content')
+                            .select('creator_id')
+                            .eq('id', contentId)
+                            .single();
+                        
+                        if (!contentError && contentData) {
+                            creatorId = contentData.creator_id;
+                        }
+                    } catch (err) {
+                        // Ignorer les erreurs de récupération
+                    }
+
+                    // Utiliser la nouvelle fonction de suppression spécifique au contenu
+                    const deletionResult = creatorId 
+                        ? await this.deleteContentFile(contentUrl, creatorId)
+                        : await this.deleteOldImage(contentUrl);
+                    
                     if (deletionResult.success) {
                         results.storageDeleted = true;
-                        console.log('Fichier média principal supprimé du storage');
                     } else {
                         results.errors.push(`Storage principal: ${deletionResult.error}`);
                     }
                 }
-                
-                // Supprimer tous les médias multiples
-                if (mediaFiles && mediaFiles.length > 0) {
-                    console.log(`Suppression de ${mediaFiles.length} fichier(s) média multiple(s)...`);
-                    let deletedCount = 0;
-                    
-                    for (const media of mediaFiles) {
-                        try {
-                            const mediaDeletionResult = await this.deleteOldImage(media.media_url);
-                            if (mediaDeletionResult.success) {
-                                deletedCount++;
-                                console.log(`✅ Média multiple supprimé: ${mediaDeletionResult.fileName}`);
-                            } else {
-                                console.warn(`⚠️ Échec suppression média: ${media.media_url} - ${mediaDeletionResult.error}`);
-                                results.errors.push(`Storage média: ${mediaDeletionResult.error}`);
-                            }
-                        } catch (error) {
-                            console.error(`Erreur suppression média ${media.media_url}:`, error);
-                            results.errors.push(`Storage média: ${error.message}`);
-                        }
-                    }
-                    
-                    if (deletedCount > 0) {
-                        results.storageDeleted = true;
-                        console.log(`✅ ${deletedCount}/${mediaFiles.length} fichier(s) média multiple(s) supprimé(s)`);
-                    }
-                }
             } catch (error) {
                 results.errors.push(`Storage: ${error.message}`);
-                console.error('Erreur générale suppression storage:', error);
             }
 
-            // 6. Tentative de suppression avec la fonction SQL
-            console.log('Tentative avec fonction SQL delete_content_cascade...');
+            // 5. Vérification finale avant suppression du contenu
             try {
-                const { data: cascadeResult, error: cascadeError } = await supabase
-                    .rpc('delete_content_cascade', { content_id: contentId });
-                
-                if (cascadeError) {
-                    console.error('Erreur fonction SQL:', cascadeError);
-                    results.errors.push(`SQL: ${cascadeError.message}`);
-                } else if (cascadeResult) {
-                    console.log('Résultat fonction SQL:', cascadeResult);
+                // Vérifier qu'il n'y a plus de transactions
+                const { data: finalTransactions, error: finalCheckError } = await supabase
+                    .from('transactions')
+                    .select('id')
+                    .eq('content_id', contentId);
+
+                // Vérifier qu'il n'y a plus de purchases
+                const { data: finalPurchases, error: finalPurchasesError } = await supabase
+                    .from('purchases')
+                    .select('id')
+                    .eq('content_id', contentId);
+
+                if (!finalCheckError && !finalPurchasesError) {
+                    const remainingTransactions = finalTransactions?.length || 0;
+                    const remainingPurchases = finalPurchases?.length || 0;
                     
-                    if (cascadeResult.success) {
-                        results.contentDeleted = cascadeResult.deleted_content || cascadeResult.soft_deleted;
-                        results.transactionsDeleted = cascadeResult.deleted_transactions > 0;
-                        results.purchasesDeleted = cascadeResult.deleted_purchases > 0;
-                        results.mediaDeleted = cascadeResult.deleted_media > 0;
-                        
-                        if (cascadeResult.soft_deleted) {
-                            console.log('✅ Contenu marqué comme supprimé (soft delete)');
-                        } else {
-                            console.log('✅ Contenu supprimé complètement');
-                        }
-                        return results; // Sortir si succès
-                    } else {
-                        results.errors.push(`SQL: ${cascadeResult.error}`);
-                        console.error('Échec fonction SQL:', cascadeResult.error);
+                    if (remainingTransactions > 0 || remainingPurchases > 0) {
+                        results.errors.push(`Références restantes: ${remainingTransactions} transactions, ${remainingPurchases} purchases`);
                     }
                 }
-            } catch (cascadeErr) {
-                console.error('Erreur appel fonction SQL:', cascadeErr);
-                results.errors.push(`SQL: ${cascadeErr.message}`);
+            } catch (checkError) {
+                // Ignorer les erreurs de vérification
             }
 
-            // 7. Fallback: suppression manuelle avec requêtes SQL directes
-            console.log('Fallback: suppression manuelle avec SQL direct...');
+            // 6. Suppression directe du contenu (hard delete)
             try {
-                // Utiliser une requête SQL brute pour contourner les restrictions
-                const { data: sqlResult, error: sqlError } = await supabase
-                    .rpc('sql', { 
-                        query: `
-                            DELETE FROM public.purchases WHERE content_id = '${contentId}';
-                            DELETE FROM public.transactions WHERE content_id = '${contentId}';
-                            DELETE FROM public.content_media WHERE content_id = '${contentId}';
-                            DELETE FROM public.content WHERE id = '${contentId}';
-                        `
-                    });
-                
-                if (sqlError) {
-                    console.error('Erreur SQL direct:', sqlError);
-                    results.errors.push(`SQL Direct: ${sqlError.message}`);
-                } else {
-                    console.log('✅ Suppression SQL direct réussie');
-                    results.contentDeleted = true;
-                    results.transactionsDeleted = true;
-                    results.purchasesDeleted = true;
-                    results.mediaDeleted = true;
-                    return results;
-                }
-            } catch (sqlErr) {
-                console.error('Erreur SQL direct:', sqlErr);
-                results.errors.push(`SQL Direct: ${sqlErr.message}`);
-            }
-
-            // 8. Dernier recours: soft delete
-            console.log('Dernier recours: soft delete...');
-            try {
-                const { error: updateError } = await supabase
+                const { error: contentError } = await supabase
                     .from('content')
-                    .update({ 
-                        status: 'rejected',
-                        is_published: false,
-                        updated_at: new Date().toISOString()
-                    })
+                    .delete()
                     .eq('id', contentId);
                 
-                if (!updateError) {
-                    results.contentDeleted = true;
-                    console.log('✅ Contenu marqué comme supprimé (soft delete final)');
+                if (contentError) {
+                    results.errors.push(`Contenu: ${contentError.message}`);
+                    
+                    // Si c'est une erreur de contrainte de clé étrangère, essayer de supprimer les références restantes
+                    if (contentError.code === '23503') {
+                        // Supprimer toutes les transactions restantes
+                        await supabase.from('transactions').delete().eq('content_id', contentId);
+                        // Supprimer toutes les purchases restantes
+                        await supabase.from('purchases').delete().eq('content_id', contentId);
+                        
+                        // Réessayer la suppression du contenu
+                        const { error: retryError } = await supabase
+                            .from('content')
+                            .delete()
+                            .eq('id', contentId);
+                        
+                        if (!retryError) {
+                            results.contentDeleted = true;
+                        } else {
+                            results.errors.push(`Contenu après nettoyage: ${retryError.message}`);
+                        }
+                    }
                 } else {
-                    console.error('Erreur soft delete final:', updateError);
-                    results.errors.push(`Soft Delete: ${updateError.message}`);
+                    results.contentDeleted = true;
                 }
-            } catch (updateErr) {
-                console.error('Erreur soft delete final:', updateErr);
-                results.errors.push(`Soft Delete: ${updateErr.message}`);
+            } catch (error) {
+                results.errors.push(`Contenu: ${error.message}`);
             }
 
-            console.log('Suppression complète terminée:', results);
             return results;
 
         } catch (error) {
-            console.error('Erreur lors de la suppression complète:', error);
             results.errors.push(`Erreur générale: ${error.message}`);
             return results;
         }

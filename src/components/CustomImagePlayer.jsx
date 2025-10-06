@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, Maximize, Eye } from 'lucide-react';
+import ImageViewTracker from './ImageViewTracker';
 
 const CustomImagePlayer = ({ 
   src, 
@@ -7,7 +8,9 @@ const CustomImagePlayer = ({
   isPurchased, 
   onViewContent,
   className = "",
-  blurEffect = false 
+  blurEffect = false,
+  contentId,
+  creatorId
 }) => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [showControls, setShowControls] = useState(false);
@@ -62,7 +65,7 @@ const CustomImagePlayer = ({
       document.exitFullscreen();
       setIsFullscreen(false);
     } else {
-      imageRef.current?.requestFullscreen().catch(console.error);
+      imageRef.current?.requestFullscreen().catch(() => {});
       setIsFullscreen(true);
     }
   };
@@ -115,6 +118,7 @@ const CustomImagePlayer = ({
             ref={imageRef}
             src={hasError ? fallbackImageUrl : src}
             alt={alt}
+            data-content-id={contentId}
             className={`w-full h-full object-cover transition-all duration-300 cursor-pointer ${
               blurEffect ? 'blur-xl brightness-50 saturate-50' : ''
             }`}
@@ -248,6 +252,17 @@ const CustomImagePlayer = ({
         <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded-full z-10">
           <span className="text-white text-xs font-medium">Zoom {Math.round(scale * 100)}%</span>
         </div>
+      )}
+
+      {/* Tracker de vues pour les images - seulement si le contenu est acheté et que les IDs sont fournis */}
+      {isPurchased && contentId && (
+        <ImageViewTracker 
+          contentId={contentId}
+          creatorId={creatorId}
+          minViewTime={3}
+          autoTrack={true}
+          isPurchased={isPurchased}
+        />
       )}
     </div>
   );

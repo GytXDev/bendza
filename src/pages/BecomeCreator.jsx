@@ -41,7 +41,6 @@ function BecomeCreator() {
           variant: "destructive"
         })
       } else {
-        console.log('Profil créateur activé avec succès')
         setShowSuccess(true)
 
         // Attendre un peu avant de rediriger pour montrer l'animation

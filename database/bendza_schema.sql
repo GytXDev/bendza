@@ -112,9 +112,42 @@ CREATE TABLE public.views (
   content_id uuid NOT NULL,
   viewed_at timestamp with time zone DEFAULT now(),
   CONSTRAINT views_pkey PRIMARY KEY (id),
-  CONSTRAINT views_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT views_content_id_fkey FOREIGN KEY (content_id) REFERENCES public.content(id)
+  CONSTRAINT views_user_id_content_id_key UNIQUE (user_id, content_id),
+  CONSTRAINT views_content_id_fkey FOREIGN KEY (content_id) REFERENCES public.content(id) ON DELETE CASCADE,
+  CONSTRAINT views_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE
 );
+
+-- Index pour optimiser les requêtes de vues
+CREATE INDEX IF NOT EXISTS idx_views_user_content ON public.views USING btree (user_id, content_id);
+
+-- Fonction pour mettre à jour le compteur de vues
+CREATE OR REPLACE FUNCTION update_views_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Mettre à jour le compteur de vues pour le contenu concerné
+    UPDATE public.content 
+    SET views_count = (
+        SELECT COUNT(*) 
+        FROM public.views 
+        WHERE views.content_id = COALESCE(NEW.content_id, OLD.content_id)
+    )
+    WHERE id = COALESCE(NEW.content_id, OLD.content_id);
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger pour mettre à jour le compteur après insertion
+CREATE TRIGGER trigger_update_views_count_insert
+    AFTER INSERT ON public.views
+    FOR EACH ROW
+    EXECUTE FUNCTION update_views_count();
+
+-- Trigger pour mettre à jour le compteur après suppression
+CREATE TRIGGER trigger_update_views_count_delete
+    AFTER DELETE ON public.views
+    FOR EACH ROW
+    EXECUTE FUNCTION update_views_count();
 
 -- Fonction pour supprimer complètement un contenu et toutes ses dépendances
 CREATE OR REPLACE FUNCTION delete_content_cascade(content_id UUID)
@@ -155,28 +188,14 @@ BEGIN
         RETURN result;
     END IF;
 
-    -- Vérifier s'il y a des transactions liées à ce contenu
+    -- Compter les transactions et purchases pour information (mais ne pas bloquer)
     SELECT COUNT(*) INTO has_transactions
     FROM public.transactions 
     WHERE content_id = delete_content_cascade.content_id;
 
-    -- Vérifier s'il y a des purchases liées à ce contenu
     SELECT COUNT(*) INTO has_purchases
     FROM public.purchases 
     WHERE content_id = delete_content_cascade.content_id;
-
-    -- Si le contenu a des transactions ou des purchases, refuser la suppression
-    IF has_transactions > 0 OR has_purchases > 0 THEN
-        result := json_build_object(
-            'success', false,
-            'content_id', content_id,
-            'error', 'Impossible de supprimer le contenu car il contient des transactions ou des achats actifs',
-            'has_transactions', has_transactions,
-            'has_purchases', has_purchases,
-            'blocked', true
-        );
-        RETURN result;
-    END IF;
 
     BEGIN
         -- 1. Supprimer d'abord les achats (ils référencent les transactions)
@@ -191,11 +210,8 @@ BEGIN
         
         GET DIAGNOSTICS deleted_transactions = ROW_COUNT;
         
-        -- 3. Supprimer les médias multiples
-        DELETE FROM public.content_media 
-        WHERE content_id = delete_content_cascade.content_id;
-        
-        GET DIAGNOSTICS deleted_media = ROW_COUNT;
+        -- 3. Les médias multiples ne sont plus utilisés (table content_media supprimée)
+        deleted_media := 0;
         
         -- 4. Supprimer les vues
         DELETE FROM public.views 

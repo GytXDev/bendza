@@ -30,8 +30,6 @@ function Cashout() {
   const { toast } = useToast();
   
   // Debug logs
-  console.log('Cashout: user state:', user);
-  console.log('Cashout: user.is_creator:', user?.is_creator);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEarnings: 0,
