@@ -18,6 +18,7 @@ import Cashout from './pages/Cashout'
 import PaymentCallback from './pages/PaymentCallback'
 import ModerationPanel from './pages/ModerationPanel'
 import AdminWithdrawals from './pages/AdminWithdrawals'
+import MyPurchases from './pages/MyPurchases'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 
@@ -73,6 +74,14 @@ function App() {
                                 <RequireAuth>
                                     <Layout>
                                         <Cashout />
+                                    </Layout>
+                                </RequireAuth>
+                            } />
+                            
+                            <Route path="/my-purchases" element={
+                                <RequireAuth>
+                                    <Layout>
+                                        <MyPurchases />
                                     </Layout>
                                 </RequireAuth>
                             } />

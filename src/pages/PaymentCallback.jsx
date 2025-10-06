@@ -243,6 +243,10 @@ const PaymentCallback = () => {
                   title: "Félicitations !",
                   description: "Votre compte créateur a été activé avec succès !"
                 });
+                // Rediriger vers le tableau de bord après 2 secondes
+                setTimeout(() => {
+                  navigate('/dashboard');
+                }, 2000);
               }
             } catch (error) {
               toast({
@@ -261,12 +265,20 @@ const PaymentCallback = () => {
                   title: "Achat réussi !",
                   description: "Vous pouvez maintenant accéder au contenu.",
                 });
+                // Rediriger vers la page Mes Achats après 2 secondes
+                setTimeout(() => {
+                  navigate('/my-purchases');
+                }, 2000);
               } else {
                 setPurchasedContentId(null);
                 toast({
                   title: "Paiement traité !",
                   description: "Votre achat a été enregistré avec succès.",
                 });
+                // Rediriger vers la page Mes Achats après 2 secondes
+                setTimeout(() => {
+                  navigate('/my-purchases');
+                }, 2000);
               }
             } catch (error) {
               toast({
@@ -419,19 +431,19 @@ const PaymentCallback = () => {
         <div className="space-y-3">
           {paymentStatus === 'success' && (
             <>
-              {purchasedContentId ? (
-                <Button
-                  onClick={() => navigate('/')}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  Voir le contenu acheté 
-                </Button>
-              ) : (
+              {paymentData?.type === 'creator_activation' ? (
                 <Button
                   onClick={() => navigate('/dashboard')}
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   Aller au tableau de bord
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => navigate('/my-purchases')}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  Voir mes achats
                 </Button>
               )}
             </>

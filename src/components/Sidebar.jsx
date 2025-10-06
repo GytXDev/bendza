@@ -11,7 +11,8 @@ import {
   UserPlus,
   Wallet,
   Shield,
-  DollarSign
+  DollarSign,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -27,6 +28,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         // Si l'utilisateur est connecté
         if (user) {
           menuItems.push({ icon: User, label: 'Profil', path: '/profile' });
+          menuItems.push({ icon: ShoppingBag, label: 'Mes Achats', path: '/my-purchases' });
           
           // Admin peut avoir accès à la modération et aux retraits
           if (user?.role === 'admin') {
