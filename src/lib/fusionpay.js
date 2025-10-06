@@ -1,7 +1,7 @@
 import { FusionPay } from "fusionpay";
 
 // Configuration FusionPay
-const FUSIONPAY_API_URL = "https://www.pay.moneyfusion.net/Bendza/87899217408b030d/pay/";
+const FUSIONPAY_API_URL = import.meta.env.FUSIONPAY_API_URL;
 const RETURN_URL = `${window.location.origin}/payment-callback`;
 const WEBHOOK_URL = `${window.location.origin}/api/webhook/fusionpay`;
 

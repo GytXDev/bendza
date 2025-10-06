@@ -29,7 +29,9 @@ function Cashout() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Debug logs
+  // Constantes
+  const MINIMUM_WITHDRAWAL_AMOUNT = 2000; // Montant minimum de retrait en FCFA
+  
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEarnings: 0,
@@ -122,6 +124,16 @@ function Cashout() {
 
   const handleWithdrawalRequest = async (withdrawalData) => {
     try {
+      // Vérifier le montant minimum
+      if (withdrawalData.amount < MINIMUM_WITHDRAWAL_AMOUNT) {
+        toast({
+          title: "Montant insuffisant",
+          description: `Le montant minimum de retrait est de ${formatPrice(MINIMUM_WITHDRAWAL_AMOUNT)}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Créer une demande de retrait avec les nouvelles données
       const { data, error } = await supabase
         .from('payouts')
@@ -176,6 +188,16 @@ function Cashout() {
 
   const handleUpdatePayout = async (withdrawalData) => {
     if (!editingPayout) return;
+
+    // Vérifier le montant minimum
+    if (withdrawalData.amount < MINIMUM_WITHDRAWAL_AMOUNT) {
+      toast({
+        title: "Montant insuffisant",
+        description: `Le montant minimum de retrait est de ${formatPrice(MINIMUM_WITHDRAWAL_AMOUNT)}`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     setActionLoading(true);
     try {
@@ -350,7 +372,7 @@ function Cashout() {
   const getStatusText = (status) => {
     switch (status) {
       case 'completed':
-        return 'Complété';
+        return 'Reçu';
       case 'pending':
         return 'En attente';
       case 'failed':
@@ -415,14 +437,22 @@ function Cashout() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={() => setShowCashoutModal(true)}
-              disabled={stats.availableBalance <= 0}
-                className="bg-white text-orange-500 hover:bg-white/90 font-semibold w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl"
-            >
-              <ArrowUpRight className="w-4 h-4 mr-2" />
-              Retirer
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={() => setShowCashoutModal(true)}
+                disabled={stats.availableBalance < MINIMUM_WITHDRAWAL_AMOUNT}
+                  className="bg-white text-orange-500 hover:bg-white/90 font-semibold w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowUpRight className="w-4 h-4 mr-2" />
+                Retirer
+              </Button>
+              
+              {stats.availableBalance < MINIMUM_WITHDRAWAL_AMOUNT && (
+                <p className="text-white/60 text-xs sm:text-sm">
+                  Montant minimum de retrait : {formatPrice(MINIMUM_WITHDRAWAL_AMOUNT)}
+                </p>
+              )}
+            </div>
           </div>
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
