@@ -260,7 +260,7 @@ function BecomeCreator() {
           className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 md:p-8 text-center mb-8 mx-4"
         >
                  <h2 className="text-xl md:text-3xl font-bold text-white mb-4">
-                   Frais d'activation : 200 FCFA
+                   Frais d'activation : 1500 FCFA
                  </h2>
                  <p className="text-sm md:text-base text-orange-100 mb-6 px-4">
                    Un seul paiement pour débloquer toutes les fonctionnalités créateur
@@ -291,7 +291,7 @@ function BecomeCreator() {
                <PaymentModal
                  isOpen={showPaymentModal}
                  onClose={() => setShowPaymentModal(false)}
-                 amount={200}
+                 amount={1500}
                  type="creator_activation"
                  onSuccess={handlePaymentSuccess}
                />

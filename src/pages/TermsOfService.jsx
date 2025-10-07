@@ -61,14 +61,32 @@ function TermsOfService() {
       id: 'content-guidelines',
       title: 'Directives de Contenu',
       icon: Shield,
-      content: `Le contenu publié sur Bendza doit respecter les règles suivantes :`,
+      content: `Le contenu publié sur Bendza doit respecter les règles suivantes. Le contenu adulte/sexuel est autorisé sous conditions strictes (approche type OnlyFans) :`,
       items: [
-        'Respecter les droits d\'auteur et la propriété intellectuelle',
-        'Ne pas contenir de contenu illégal, offensant ou inapproprié',
-        'Ne pas promouvoir la violence, la haine ou la discrimination',
-        'Ne pas contenir de contenu pornographique ou explicite',
-        'Respecter la vie privée d\'autrui',
-        'Ne pas spammer ou publier de contenu répétitif'
+        'Respecter les droits d\'auteur et la propriété intellectuelle (droits clairs, licences, autorisations)',
+        'Contenu conforme aux lois applicables et aux présentes conditions',
+        'Aucun contenu impliquant des mineurs, une mise en scène de mineurs ou l\'apparence de minorité',
+        'Aucun contenu non consensuel, exploitant, coercitif, revenge porn ou voyeurisme illégal',
+        'Consentement explicite et vérifiable de toutes les personnes filmées/photographiées',
+        'Aucun trafic, proxénétisme ou sollicitation illégale de services sexuels',
+        'Aucun contenu haineux, promotion de violence, ou discrimination',
+        'Respect strict de la vie privée (pas de doxxing ni données personnelles publiées sans accord)',
+        'Aucun spam, arnaque, malware, ou contenu trompeur'
+      ]
+    },
+    {
+      id: 'adult-content',
+      title: 'Contenu Adulte et Consentement',
+      icon: Shield,
+      content: `Bendza autorise le contenu adulte/sexuel si et seulement s\'il est légal, consenti, sécurisé et propre de droit :`,
+      items: [
+        'Tous les participants doivent être majeurs (preuve d\'âge et consentement requis en cas de demande légitime)',
+        'Aucun contenu impliquant des mineurs, même suggéré (uniformes scolaires, mise en scène de minorité, etc.)',
+        'Interdit : contenu non consenti, sous influence, voyeurisme clandestin, exploitation ou chantage',
+        'Interdit : incitation à des activités illégales, violence réelle, mutilation, bestialité',
+        'Les créateurs sont responsables de la sécurité des tournages et du respect sanitaire',
+        'Les droits (image, auteur, marques) doivent être clairs et disponibles en cas de vérification',
+        'Bendza peut demander des preuves de conformité et retirer tout contenu non conforme'
       ]
     },
     {
@@ -110,8 +128,7 @@ function TermsOfService() {
          'Respecter les droits d\'auteur et la propriété intellectuelle',
          'Répondre aux demandes de modération dans les délais',
          'Maintenir un comportement professionnel',
-         'Respecter les délais de traitement des retraits',
-         'Déclarer vos revenus selon la réglementation locale applicable'
+        'Respecter les délais de traitement des retraits'
        ]
      },
     {
